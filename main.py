@@ -10,7 +10,7 @@ from musicfy.app import MusicFyWindow
 
 def main() -> int:
     app = QApplication(sys.argv)
-    app.setApplicationName("MusicFy")
+    app.setApplicationName("N3mesisFy")
     app.setOrganizationName("N3mesis Studio")
 
     window = MusicFyWindow()
