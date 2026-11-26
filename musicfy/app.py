@@ -277,7 +277,7 @@ class CollectionCard(QFrame):
         artwork.setObjectName("collectionArtwork")
         artwork.setFixedSize(160, 160)
         artwork_layout = QGridLayout(artwork)
-        artwork_layout.setContentsMargins(0, 0, 8, 8)
+        artwork_layout.setContentsMargins(0, 0, 0, 0)
         artwork_layout.setSpacing(0)
 
         art = QLabel()
@@ -641,7 +641,7 @@ class MusicFyWindow(QMainWindow):
         self.home_album_scroll.setObjectName("homeAlbumScroll")
         self.home_album_scroll.setWidgetResizable(True)
         self.home_album_scroll.setFrameShape(QFrame.Shape.NoFrame)
-        self.home_album_scroll.setMinimumHeight(270)
+        self.home_album_scroll.setMinimumHeight(288)
         self.home_album_scroll.setHorizontalScrollBarPolicy(
             Qt.ScrollBarPolicy.ScrollBarAsNeeded
         )
@@ -673,7 +673,7 @@ class MusicFyWindow(QMainWindow):
         self.home_playlist_scroll.setObjectName("homeAlbumScroll")
         self.home_playlist_scroll.setWidgetResizable(True)
         self.home_playlist_scroll.setFrameShape(QFrame.Shape.NoFrame)
-        self.home_playlist_scroll.setMinimumHeight(270)
+        self.home_playlist_scroll.setMinimumHeight(288)
         self.home_playlist_scroll.setHorizontalScrollBarPolicy(
             Qt.ScrollBarPolicy.ScrollBarAsNeeded
         )
