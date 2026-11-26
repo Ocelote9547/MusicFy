@@ -1264,9 +1264,11 @@ class MusicFyWindow(QMainWindow):
         if not tracks:
             self.statusBar().showMessage("Este álbum no contiene canciones disponibles.", 4000)
             return
-        self.queue = tracks
+        self.queue = list(tracks)
         self.current_index = 0
-        self.play_track(tracks[0])
+        if self.shuffle_enabled:
+            self._build_shuffle_order(0)
+        self.play_track(self.queue[0])
 
     def _render_collections(self) -> None:
         self._clear_grid(self.collection_grid)
@@ -1764,7 +1766,7 @@ class MusicFyWindow(QMainWindow):
         track_gain = 1.0
         if self.replaygain_enabled and self.current_track is not None:
             tag = str(self.current_track.get("replaygain_track_gain") or "")
-            match = re.search(r"[-+]?(?:\\d+\\.?\\d*|\\.\\d+)", tag)
+            match = re.search(r"[-+]?(?:\d+\.?\d*|\.\d+)", tag)
             if match:
                 try:
                     decibels = float(match.group(0))
@@ -1886,21 +1888,78 @@ class MusicFyWindow(QMainWindow):
                 return
             self.queue = list(tracks)
             self.current_index = -1 if offset > 0 else 0
+            if self.shuffle_enabled:
+                self._build_shuffle_order(self.current_index)
 
-        if self.shuffle_enabled and offset > 0 and len(self.queue) > 1:
-            candidates = [index for index in range(len(self.queue)) if index != self.current_index]
-            self.current_index = random.choice(candidates)
+        if self.shuffle_enabled:
+            if len(self.queue) > 1:
+                if not self._advance_shuffle(offset):
+                    if offset < 0:
+                        return
+                    self._build_shuffle_order(self.current_index)
+                    if not self._advance_shuffle(1):
+                        return
+            elif self.queue:
+                self.current_index = 0
         else:
             self.current_index = (self.current_index + offset) % len(self.queue)
         self.play_track(self.queue[self.current_index])
 
     def toggle_shuffle(self, checked: bool) -> None:
         self.shuffle_enabled = bool(checked)
+        if self.shuffle_enabled and self.queue:
+            self._build_shuffle_order(self.current_index)
+        else:
+            self.shuffle_order = []
+            self.shuffle_position = -1
         self.shuffle_button.set_icon_color("#12aee9" if checked else "#aab6c4")
         self.statusBar().showMessage(
-            "Reproducción aleatoria activada." if checked
-            else "Reproducción aleatoria desactivada.", 3000
+            "Aleatorio activado: no repetirás pistas hasta completar la cola."
+            if checked else "Reproducción aleatoria desactivada.",
+            4000,
         )
+
+    def _build_shuffle_order(self, start_index: int = -1) -> None:
+        indices = list(range(len(self.queue)))
+        if 0 <= start_index < len(indices):
+            indices.remove(start_index)
+            random.shuffle(indices)
+            self.shuffle_order = [start_index, *indices]
+            self.shuffle_position = 0
+        else:
+            random.shuffle(indices)
+            self.shuffle_order = indices
+            self.shuffle_position = -1
+
+    def _advance_shuffle(self, offset: int) -> bool:
+        if not self.queue:
+            return False
+        if not self.shuffle_order:
+            self._build_shuffle_order(self.current_index)
+        if not self.shuffle_order:
+            return False
+
+        next_position = self.shuffle_position + offset
+        if next_position < 0:
+            return False
+        if next_position >= len(self.shuffle_order):
+            current = self.current_index
+            candidates = [index for index in range(len(self.queue)) if index != current]
+            random.shuffle(candidates)
+            if current >= 0:
+                self.shuffle_order = [current, *candidates]
+                self.shuffle_position = 0
+                next_position = 1
+            else:
+                self.shuffle_order = candidates
+                self.shuffle_position = -1
+                next_position = 0
+            if next_position >= len(self.shuffle_order):
+                return False
+
+        self.shuffle_position = next_position
+        self.current_index = self.shuffle_order[self.shuffle_position]
+        return True
 
     def cycle_repeat_mode(self, _checked: bool = False) -> None:
         modes = ("off", "all", "one")
@@ -2038,15 +2097,16 @@ class MusicFyWindow(QMainWindow):
             self.player.play()
             return
         if self.shuffle_enabled and len(self.queue) > 1:
-            candidates = [index for index in range(len(self.queue)) if index != self.current_index]
-            self.current_index = random.choice(candidates)
-            self.play_track(self.queue[self.current_index])
+            if self._advance_shuffle(1):
+                self.play_track(self.queue[self.current_index])
             return
         if self.current_index + 1 < len(self.queue):
             self.current_index += 1
             self.play_track(self.queue[self.current_index])
         elif self.repeat_mode == "all":
             self.current_index = 0
+            if self.shuffle_enabled:
+                self._build_shuffle_order(-1)
             self.play_track(self.queue[self.current_index])
         else:
             self.player.stop()
