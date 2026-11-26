@@ -36,8 +36,8 @@ class MusicFyWindowSmokeTests(unittest.TestCase):
             {"home", "tracks", "albums", "artists", "genres", "favorites", "history"},
         )
         self.assertEqual(self.window.page_mode, "home")
-        self.assertTrue(not self.window.home_empty_card.isHidden())
-        self.assertFalse(not self.window.home_album_scroll.isHidden())
+        self.assertFalse(self.window.home_empty_card.isHidden())
+        self.assertTrue(self.window.home_album_scroll.isHidden())
 
     def test_navigation_switches_to_album_grid(self) -> None:
         self.window.show_page("albums")
