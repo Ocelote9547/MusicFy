@@ -40,7 +40,6 @@ class MusicFyWindowSmokeTests(unittest.TestCase):
         self.assertEqual(self.window.page_mode, "home")
         self.assertEqual(self.window.windowTitle(), "N3mesisFy")
         self.assertTrue(self.window.nav_buttons["home"].isChecked())
-        self.assertTrue(self.window.nav_buttons["home"].isChecked())
         self.assertFalse(self.window.home_empty_card.isHidden())
         self.assertTrue(self.window.home_album_scroll.isHidden())
 
@@ -49,6 +48,14 @@ class MusicFyWindowSmokeTests(unittest.TestCase):
         self.assertEqual(self.window.page_mode, "albums")
         self.assertEqual(self.window.content_stack.currentIndex(), 2)
         self.assertTrue(self.window.nav_buttons["albums"].isChecked())
+
+
+    def test_playlist_navigation_is_available(self) -> None:
+        self.window.show_page("playlists")
+        self.assertEqual(self.window.page_mode, "playlists")
+        self.assertEqual(self.window.content_stack.currentIndex(), 2)
+        self.assertTrue(self.window.nav_buttons["playlists"].isChecked())
+
 
 
     def test_vector_icon_set_paints_without_system_glyph_fonts(self) -> None:
