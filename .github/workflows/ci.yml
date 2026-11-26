@@ -18,3 +18,5 @@ jobs:
           python-version: "3.12"
       - name: Check Python syntax
         run: python -m compileall -q main.py musicfy
+      - name: Run database tests
+        run: python -m unittest discover -s tests -v
