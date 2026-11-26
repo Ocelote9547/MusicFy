@@ -735,3 +735,73 @@ QPushButton#controlButton:hover {
 QPushButton#controlButton#fullPlayerButton {
     color: #c6d3df;
 }
+
+
+/* N3mesisFy 0.6 — listening tools and focused player */
+QPushButton#playerTab {
+    color: #8797a7;
+    background: transparent;
+    border: 1px solid transparent;
+    border-radius: 8px;
+    padding: 9px 14px;
+    font-size: 9px;
+    font-weight: 850;
+    letter-spacing: 1px;
+}
+QPushButton#playerTab:hover {
+    color: #eef4f8;
+    background: #151c23;
+}
+QPushButton#playerTab:checked {
+    color: #b9edff;
+    background: rgba(18,184,238,.12);
+    border: 1px solid rgba(18,184,238,.25);
+}
+QLabel#lyricsText {
+    color: #e2ebf2;
+    font-size: 20px;
+    font-weight: 650;
+    padding: 26px 40px;
+    background: transparent;
+}
+QPushButton#replayGainButton {
+    color: #8b9aaa;
+    background: #111820;
+    border: 1px solid #293641;
+    border-radius: 8px;
+    min-width: 35px;
+    min-height: 30px;
+    padding: 0 7px;
+    font-size: 9px;
+    font-weight: 900;
+}
+QPushButton#replayGainButton:hover {
+    color: #dceaf2;
+    border-color: #3c6378;
+}
+QPushButton#replayGainButton:checked {
+    color: #07131b;
+    background: #66d6f7;
+    border-color: #66d6f7;
+}
+QPushButton#controlButton:checked {
+    color: #b9edff;
+    background: rgba(18,184,238,.14);
+    border: 1px solid rgba(18,184,238,.3);
+}
+QLabel#heroKicker {
+    color: #27c0ee;
+}
+QLabel#sectionTitle {
+    color: #f3f6f8;
+    font-size: 18px;
+    font-weight: 850;
+    letter-spacing: -.25px;
+}
+QLabel#collectionSubtitle {
+    color: #91a1af;
+}
+QFrame#playerBar {
+    background: #0e141b;
+    border: 1px solid #2b3944;
+}
