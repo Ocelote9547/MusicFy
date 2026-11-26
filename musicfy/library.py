@@ -39,7 +39,7 @@ def read_audio_file(file_path: str | Path) -> dict[str, Any] | None:
             genre = _first_tag(tags, "genre") or genre
             info = getattr(audio, "info", None)
             duration = float(getattr(info, "length", 0.0) or 0.0)
-    except (OSError, ValueError, TypeError):
+    except Exception:
         # Keep the file in the library even if its tags are damaged.
         pass
 
@@ -51,7 +51,7 @@ def read_audio_file(file_path: str | Path) -> dict[str, Any] | None:
                 image_data = _extract_cover_bytes(raw_audio)
                 if image_data:
                     cover_path = _cache_cover(path, image_data)
-        except (OSError, ValueError, TypeError):
+        except Exception:
             pass
 
     return {
