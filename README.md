@@ -5,7 +5,7 @@ Reproductor musical de escritorio desarrollado con **Python + PyQt6**, siguiendo
 ## Interfaz AURORA (0.3.1)
 
 - Tema inspirado en N3mesis Launcher: negro grafito, paneles oscuros, bordes finos y acento cian.
-- Iconografía vectorial pintada con Qt, consistente y sin depender de emojis ni de fuentes de símbolos instaladas en Windows.
+- Navegación horizontal superior en cápsula, inspirada en la estructura de N3mesis Launcher.\n- Iconografía vectorial pintada con Qt, consistente y sin depender de emojis ni de fuentes de símbolos instaladas en Windows.
 - Controles de navegación, importación y reproducción con iconos vectoriales.
 - Botón de reproducción, pausa, anterior y siguiente con iconos escalables.
 
