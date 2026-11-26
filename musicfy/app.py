@@ -1780,31 +1780,111 @@ class MusicFyWindow(QMainWindow):
 
     def show_queue(self) -> None:
         dialog = QDialog(self)
-        dialog.setWindowTitle("Cola de reproducción")
-        dialog.resize(520, 480)
+        dialog.setWindowTitle("Cola de reproducción · N3mesisFy")
+        dialog.setObjectName("queueDialog")
+        dialog.resize(620, 600)
         layout = QVBoxLayout(dialog)
-        title = QLabel("Siguiente en la cola")
+        layout.setContentsMargins(20, 18, 20, 18)
+        layout.setSpacing(12)
+
+        title = QLabel("Cola de reproducción")
         title.setObjectName("sectionTitle")
         layout.addWidget(title)
+        hint = QLabel("Arrastra las canciones para cambiar el orden de reproducción.")
+        hint.setObjectName("muted")
+        layout.addWidget(hint)
+
         queue_list = QListWidget()
         queue_list.setObjectName("queueList")
+        queue_list.setDragEnabled(True)
+        queue_list.setAcceptDrops(True)
+        queue_list.setDropIndicatorShown(True)
+        queue_list.setDragDropMode(QAbstractItemView.DragDropMode.InternalMove)
+        queue_list.setDefaultDropAction(Qt.DropAction.MoveAction)
+        queue_list.setSelectionMode(QAbstractItemView.SelectionMode.SingleSelection)
         for index, track in enumerate(self.queue):
             item = QListWidgetItem(
-                f'{index + 1:02d}   {track.get("title", "Pista")}   —   {track.get("artist", "Artista desconocido")}'
+                f'{index + 1:02d}   {track.get("title", "Pista")}   —   '
+                f'{track.get("artist", "Artista desconocido")}'
             )
             item.setData(Qt.ItemDataRole.UserRole, index)
+            item.setToolTip(str(track.get("path") or ""))
             queue_list.addItem(item)
         if self.current_index >= 0 and self.current_index < queue_list.count():
             queue_list.setCurrentRow(self.current_index)
+
+        queue_list.model().rowsMoved.connect(
+            lambda *_args: self._sync_queue_from_widget(queue_list)
+        )
         queue_list.itemDoubleClicked.connect(
-            lambda item: self._play_queue_index(int(item.data(Qt.ItemDataRole.UserRole)), dialog)
+            lambda item: self._play_queue_index(
+                int(item.data(Qt.ItemDataRole.UserRole)), dialog
+            )
         )
         layout.addWidget(queue_list, 1)
-        buttons = QDialogButtonBox(QDialogButtonBox.StandardButton.Close)
-        buttons.rejected.connect(dialog.reject)
-        buttons.accepted.connect(dialog.accept)
-        layout.addWidget(buttons)
+
+        actions = QHBoxLayout()
+        remove_button = QPushButton("Quitar de la cola")
+        remove_button.setObjectName("secondaryButton")
+        remove_button.clicked.connect(
+            lambda: self._remove_queue_item(queue_list)
+        )
+        actions.addWidget(remove_button)
+        actions.addStretch(1)
+        close_button = QPushButton("Cerrar")
+        close_button.setObjectName("primaryButton")
+        close_button.clicked.connect(dialog.accept)
+        actions.addWidget(close_button)
+        layout.addLayout(actions)
         dialog.exec()
+
+    def _sync_queue_from_widget(self, queue_list: QListWidget) -> None:
+        previous_queue = list(self.queue)
+        previous_index = self.current_index
+        order = [
+            int(queue_list.item(row).data(Qt.ItemDataRole.UserRole))
+            for row in range(queue_list.count())
+        ]
+        if any(index < 0 or index >= len(previous_queue) for index in order):
+            return
+
+        self.queue = [previous_queue[index] for index in order]
+        self.current_index = (
+            order.index(previous_index) if previous_index in order else -1
+        )
+        for row in range(queue_list.count()):
+            item = queue_list.item(row)
+            track = self.queue[row]
+            item.setData(Qt.ItemDataRole.UserRole, row)
+            item.setText(
+                f'{row + 1:02d}   {track.get("title", "Pista")}   —   '
+                f'{track.get("artist", "Artista desconocido")}'
+            )
+        self.statusBar().showMessage("Orden de la cola actualizado.", 2500)
+
+    def _remove_queue_item(self, queue_list: QListWidget) -> None:
+        row = queue_list.currentRow()
+        if row < 0 or row >= len(self.queue):
+            return
+        current_track = self.queue[self.current_index] if 0 <= self.current_index < len(self.queue) else None
+        self.queue.pop(row)
+        queue_list.takeItem(row)
+
+        if current_track is None:
+            self.current_index = -1
+        else:
+            self.current_index = next(
+                (index for index, track in enumerate(self.queue) if track is current_track),
+                -1,
+            )
+        for index in range(queue_list.count()):
+            item = queue_list.item(index)
+            item.setData(Qt.ItemDataRole.UserRole, index)
+            track = self.queue[index]
+            item.setText(
+                f'{index + 1:02d}   {track.get("title", "Pista")}   —   '
+                f'{track.get("artist", "Artista desconocido")}'
+            )
 
     def _play_queue_index(self, index: int, dialog: QDialog) -> None:
         if 0 <= index < len(self.queue):
