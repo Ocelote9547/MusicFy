@@ -65,12 +65,12 @@ def draw_vector_icon(painter: QPainter, name: str, color: str, size: int) -> Non
         path.lineTo(18.5, 21); path.lineTo(18.5, 9.5)
         painter.drawPath(path)
     elif name == "tracks":
-        painter.drawRoundedRect(QRectF(4, 3, 16, 18, 2, 2), 2.0, 2.0)
+        painter.drawRoundedRect(QRectF(4, 3, 16, 18), 2.0, 2.0)
         for y, end in ((8, 16), (12, 16), (16, 14)):
             painter.drawLine(QLineF(8, y, end, y))
             painter.drawEllipse(QRectF(6, y - .5, 1, 1))
     elif name == "albums":
-        painter.drawRoundedRect(QRectF(3, 3, 18, 18, 3, 3), 2.0, 2.0)
+        painter.drawRoundedRect(QRectF(3, 3, 18, 18), 3.0, 3.0)
         painter.drawEllipse(QRectF(7, 7, 10, 10))
         painter.drawEllipse(QRectF(10.5, 10.5, 3, 3))
     elif name == "artist":
@@ -127,16 +127,16 @@ def draw_vector_icon(painter: QPainter, name: str, color: str, size: int) -> Non
         painter.setBrush(QColor(color)); painter.drawPath(path)
     elif name == "pause":
         painter.setBrush(QColor(color)); painter.setPen(Qt.PenStyle.NoPen)
-        painter.drawRoundedRect(QRectF(6, 4, 4.5, 16, 1, 1), 2.0, 2.0)
-        painter.drawRoundedRect(QRectF(13.5, 4, 4.5, 16, 1, 1), 2.0, 2.0)
+        painter.drawRoundedRect(QRectF(6, 4, 4.5, 16), 1.0, 1.0)
+        painter.drawRoundedRect(QRectF(13.5, 4, 4.5, 16), 1.0, 1.0)
     elif name == "previous":
         painter.setBrush(QColor(color)); painter.setPen(Qt.PenStyle.NoPen)
         path.moveTo(19, 5); path.lineTo(8, 12); path.lineTo(19, 19); path.closeSubpath()
-        painter.drawPath(path); painter.drawRoundedRect(QRectF(4, 5, 2.2, 14, 1, 1), 2.0, 2.0)
+        painter.drawPath(path); painter.drawRoundedRect(QRectF(4, 5, 2.2, 14), 1.0, 1.0)
     elif name == "next":
         painter.setBrush(QColor(color)); painter.setPen(Qt.PenStyle.NoPen)
         path.moveTo(5, 5); path.lineTo(16, 12); path.lineTo(5, 19); path.closeSubpath()
-        painter.drawPath(path); painter.drawRoundedRect(QRectF(18, 5, 2.2, 14, 1, 1), 2.0, 2.0)
+        painter.drawPath(path); painter.drawRoundedRect(QRectF(18, 5, 2.2, 14), 1.0, 1.0)
 
     painter.restore()
 
