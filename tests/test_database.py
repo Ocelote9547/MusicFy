@@ -117,6 +117,10 @@ class MusicDatabaseTests(unittest.TestCase):
         self.assertEqual(tracks[0]["title"], "Legacy track")
         self.assertEqual(tracks[0]["genre"], "Sin género")
         self.assertIsNone(tracks[0]["cover_path"])
+        self.assertEqual(tracks[0]["lyrics"], "")
+        self.assertEqual(tracks[0]["replaygain_track_gain"], "")
+        self.assertEqual(tracks[0]["play_count"], 0)
+        self.assertTrue(tracks[0]["date_added"])
 
     def test_playlist_storage_order_and_library_metadata(self) -> None:
         self.database.save_track({
@@ -163,6 +167,34 @@ class MusicDatabaseTests(unittest.TestCase):
 
         self.database.delete_playlist(playlist_id)
         self.assertEqual(self.database.list_playlists(), [])
+
+
+
+    def test_recent_added_and_most_played_views_sort_correctly(self) -> None:
+        self.database.save_tracks([
+            {
+                "path": "/music/one.mp3",
+                "title": "One",
+                "artist": "Artist",
+                "album": "Album",
+                "duration": 120,
+            },
+            {
+                "path": "/music/two.mp3",
+                "title": "Two",
+                "artist": "Artist",
+                "album": "Album",
+                "duration": 130,
+            },
+        ])
+        self.database.mark_played("/music/two.mp3")
+        self.database.mark_played("/music/two.mp3")
+        self.database.mark_played("/music/one.mp3")
+
+        most_played = self.database.list_tracks("most_played")
+        self.assertEqual(most_played[0]["path"], "/music/two.mp3")
+        self.assertEqual(most_played[0]["play_count"], 2)
+        self.assertEqual(len(self.database.list_tracks("recent_added")), 2)
 
 
 
