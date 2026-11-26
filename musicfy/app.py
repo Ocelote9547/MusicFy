@@ -1264,14 +1264,12 @@ class MusicFyWindow(QMainWindow):
         )
 
     def _finish_library_import(self, count: int) -> None:
-        self._set_import_busy(False)
         self.refresh_content()
         self.statusBar().showMessage(
             f"Biblioteca actualizada: {count} archivos analizados.", 7000
         )
     
     def _fail_library_import(self, message: str) -> None:
-        self._set_import_busy(False)
         self.statusBar().showMessage("La importación terminó con algunos errores.", 7000)
         QMessageBox.warning(
             self, "Error al importar música",
@@ -1280,6 +1278,7 @@ class MusicFyWindow(QMainWindow):
     
     def _release_import_worker(self) -> None:
         self.import_worker = None
+        self._set_import_busy(False)
 
     # ------------------------------------------------------------------
     # M3U playlists
