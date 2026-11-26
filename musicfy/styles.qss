@@ -1,4 +1,4 @@
-/* MusicFy 0.3.1 — N3mesis-inspired dark desktop UI */
+/* N3mesisFy 0.4.0 — N3mesis-inspired desktop player */
 
 /* Global canvas */
 QMainWindow#musicFyWindow {
@@ -429,4 +429,120 @@ QPushButton#topNavButton QLabel {
 }
 QPushButton#topNavButton:checked QLabel {
     color: #101820;
+}
+
+
+/* N3mesisFy 0.4.0 — left navigation and M3U playlist actions */
+QFrame#sidebar {
+    background: #0d0e11;
+    border: 1px solid #25292f;
+    border-radius: 17px;
+}
+QLabel#brand {
+    color: #f5f7fa;
+    font-size: 23px;
+    font-weight: 900;
+    letter-spacing: -.8px;
+}
+QPushButton#navButton {
+    text-align: left;
+    background: transparent;
+    border: 1px solid transparent;
+    border-radius: 9px;
+    padding: 0;
+    min-height: 38px;
+}
+QPushButton#navButton:hover {
+    background: #171a1e;
+    border-color: #292f36;
+}
+QPushButton#navButton:checked {
+    background: #f2f4f6;
+    border-color: #f2f4f6;
+}
+QPushButton#navButton QLabel {
+    color: #aeb9c6;
+    background: transparent;
+    font-size: 11px;
+    font-weight: 650;
+}
+QPushButton#navButton:checked QLabel {
+    color: #101820;
+    font-weight: 800;
+}
+QPushButton#sidebarAction {
+    color: #bac5d1;
+    background: transparent;
+    border: 1px solid transparent;
+    border-radius: 9px;
+    padding: 0;
+    text-align: left;
+    min-height: 36px;
+    font-size: 10px;
+}
+QPushButton#sidebarAction:hover {
+    color: #f3f6f9;
+    background: #171a1e;
+    border-color: #2b3038;
+}
+QPushButton#sidebarAction QLabel {
+    color: #bac5d1;
+    background: transparent;
+    font-size: 10px;
+}
+QPushButton#primaryButton,
+QPushButton#secondaryButton,
+QPushButton#heroButton,
+QPushButton#textButton,
+QPushButton#controlButton,
+QPushButton#playButton {
+    padding: 0;
+}
+QPushButton#primaryButton QLabel {
+    color: #06131b;
+    font-weight: 800;
+}
+QPushButton#secondaryButton QLabel {
+    color: #e1e7ee;
+    font-weight: 700;
+}
+QPushButton#dangerButton {
+    color: #ffdce0;
+    background: #241216;
+    border: 1px solid #51252d;
+    border-radius: 9px;
+    padding: 0;
+}
+QPushButton#dangerButton:hover {
+    background: #35171d;
+    border-color: #a13a4a;
+}
+QPushButton#dangerButton QLabel {
+    color: #ff9eaa;
+    background: transparent;
+}
+QPushButton#playButton QLabel { background: transparent; }
+QPushButton#controlButton QLabel { background: transparent; }
+QPushButton#controlButton:checked {
+    background: rgba(18,174,233,.12);
+    border: 1px solid rgba(18,174,233,.28);
+}
+QDialog {
+    background: #101216;
+    color: #edf1f5;
+}
+QListWidget#queueList {
+    background: #0c0f13;
+    color: #e5ebf2;
+    border: 1px solid #292f36;
+    border-radius: 10px;
+    padding: 6px;
+}
+QListWidget#queueList::item {
+    padding: 10px;
+    border-bottom: 1px solid #20252c;
+}
+QListWidget#queueList::item:selected {
+    color: #f4f8fb;
+    background: rgba(18,174,233,.18);
 }
