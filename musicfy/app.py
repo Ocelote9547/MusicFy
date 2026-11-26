@@ -1309,6 +1309,8 @@ class MusicFyWindow(QMainWindow):
             return
         self.queue = list(tracks)
         self.current_index = 0
+        if self.shuffle_enabled:
+            self._build_shuffle_order(0)
         self.play_track(self.queue[0])
 
     def play_featured_album(self) -> None:
@@ -1690,7 +1692,7 @@ class MusicFyWindow(QMainWindow):
                 track for track in tracks
                 if any(
                     query in str(track.get(key) or "").casefold()
-                    for key in ("title", "artist", "album", "genre")
+                    for key in ("title", "artist", "album", "genre", "lyrics")
                 )
             ]
 
