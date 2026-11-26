@@ -243,6 +243,10 @@ class IconButton(QPushButton):
     def set_label_color(self, color: str) -> None:
         self.label_widget.setStyleSheet(f"color: {color}; font-weight: 800;")
 
+    def set_label_text(self, text: str) -> None:
+        self.label_widget.setText(text)
+        self.setMinimumWidth(max(92, self.icon_widget.width() + len(text) * 8 + 65))
+
 
 
 class CollectionCard(QFrame):
@@ -261,20 +265,21 @@ class CollectionCard(QFrame):
         super().__init__(parent)
         self.setObjectName("collectionCard")
         self.setCursor(Qt.CursorShape.PointingHandCursor)
-        self.setFixedWidth(198)
+        self.setFixedWidth(182)
+        self.setMinimumHeight(252)
 
         layout = QVBoxLayout(self)
         layout.setContentsMargins(10, 10, 10, 12)
-        layout.setSpacing(8)
+        layout.setSpacing(7)
 
         art = QLabel()
         art.setObjectName("collectionCover")
         art.setAlignment(Qt.AlignmentFlag.AlignCenter)
-        art.setFixedSize(176, 176)
+        art.setFixedSize(160, 160)
         art.setPixmap(
             cover.scaled(
-                176,
-                176,
+                160,
+                160,
                 Qt.AspectRatioMode.KeepAspectRatioByExpanding,
                 Qt.TransformationMode.SmoothTransformation,
             )
@@ -508,7 +513,12 @@ class MusicFyWindow(QMainWindow):
         parent_layout.addSpacing(11)
 
     def _build_home_page(self) -> QWidget:
+        scroll = QScrollArea()
+        scroll.setObjectName("homePageScroll")
+        scroll.setWidgetResizable(True)
+        scroll.setFrameShape(QFrame.Shape.NoFrame)
         page = QWidget()
+        page.setObjectName("homePageContent")
         layout = QVBoxLayout(page)
         layout.setContentsMargins(0, 0, 0, 0)
         layout.setSpacing(17)
@@ -516,8 +526,8 @@ class MusicFyWindow(QMainWindow):
         # Editorial hero: headline, useful action and custom MusicFy artwork.
         hero = QFrame()
         hero.setObjectName("heroBanner")
-        hero.setMinimumHeight(208)
-        hero.setMaximumHeight(220)
+        hero.setMinimumHeight(190)
+        hero.setMaximumHeight(196)
         hero_layout = QHBoxLayout(hero)
         hero_layout.setContentsMargins(30, 22, 24, 22)
         hero_layout.setSpacing(12)
@@ -532,33 +542,34 @@ class MusicFyWindow(QMainWindow):
         hero_title.setObjectName("heroTitle")
         copy.addWidget(hero_title)
 
-        hero_text = QLabel(
+        self.hero_text_label = QLabel(
             "Todos tus álbumes, artistas y canciones en un mismo lugar."
         )
-        hero_text.setObjectName("heroText")
-        hero_text.setWordWrap(True)
-        hero_text.setMaximumWidth(440)
-        copy.addWidget(hero_text)
+        self.hero_text_label.setObjectName("heroText")
+        self.hero_text_label.setWordWrap(True)
+        self.hero_text_label.setMaximumWidth(500)
+        copy.addWidget(self.hero_text_label)
 
-        explore = IconButton("arrow-right", "Explorar mi biblioteca")
-        explore.set_icon_color("#06131b")
-        explore.set_label_color("#06131b")
-        explore.setObjectName("heroButton")
-        explore.setCursor(Qt.CursorShape.PointingHandCursor)
-        explore.clicked.connect(lambda: self.show_page("tracks"))
-        copy.addWidget(explore, 0, Qt.AlignmentFlag.AlignLeft)
+        self.hero_action_button = IconButton("play", "Reproducir destacado")
+        self.hero_action_button.set_icon_color("#06131b")
+        self.hero_action_button.set_label_color("#06131b")
+        self.hero_action_button.setObjectName("heroButton")
+        self.hero_action_button.setMinimumWidth(176)
+        self.hero_action_button.setCursor(Qt.CursorShape.PointingHandCursor)
+        self.hero_action_button.clicked.connect(self.play_featured_album)
+        copy.addWidget(self.hero_action_button, 0, Qt.AlignmentFlag.AlignLeft)
         copy.addStretch(1)
         hero_layout.addLayout(copy, 1)
 
         self.hero_artwork = QLabel()
         self.hero_artwork.setObjectName("heroArtwork")
-        self.hero_artwork.setFixedSize(205, 150)
+        self.hero_artwork.setFixedSize(168, 168)
         self.hero_artwork.setAlignment(Qt.AlignmentFlag.AlignCenter)
         self.hero_artwork.setPixmap(
             self._hero_artwork().scaled(
-                205,
-                150,
-                Qt.AspectRatioMode.IgnoreAspectRatio,
+                168,
+                168,
+                Qt.AspectRatioMode.KeepAspectRatioByExpanding,
                 Qt.TransformationMode.SmoothTransformation,
             )
         )
@@ -578,8 +589,8 @@ class MusicFyWindow(QMainWindow):
         self.artist_stat = self._make_stat_card("ARTISTAS", "0", "artist")
         self.favorites_stat = self._make_stat_card("FAVORITOS", "0", "star")
         for card in (self.total_stat, self.album_stat, self.artist_stat, self.favorites_stat):
-            card.setMinimumHeight(76)
-            card.setMaximumHeight(82)
+            card.setMinimumHeight(66)
+            card.setMaximumHeight(70)
             stats.addWidget(card)
         layout.addLayout(stats)
 
@@ -602,6 +613,7 @@ class MusicFyWindow(QMainWindow):
         self.home_album_scroll.setObjectName("homeAlbumScroll")
         self.home_album_scroll.setWidgetResizable(True)
         self.home_album_scroll.setFrameShape(QFrame.Shape.NoFrame)
+        self.home_album_scroll.setMinimumHeight(270)
         self.home_album_scroll.setHorizontalScrollBarPolicy(
             Qt.ScrollBarPolicy.ScrollBarAsNeeded
         )
@@ -662,7 +674,8 @@ class MusicFyWindow(QMainWindow):
         empty_actions.addWidget(empty_folder_button)
         empty_layout.addLayout(empty_actions)
         layout.addWidget(self.home_empty_card, 1)
-        return page
+        scroll.setWidget(page)
+        return scroll
 
     def _build_tracks_page(self) -> QWidget:
         page = QWidget()
@@ -998,6 +1011,41 @@ class MusicFyWindow(QMainWindow):
         has_music = bool(self.database.list_tracks("all"))
         has_albums = bool(records)
         show_empty = not has_albums
+        self.featured_album = records[0] if records else None
+
+        # Feature the user's own cover art, not a generic placeholder graphic.
+        if self.featured_album:
+            featured = self.featured_album
+            title = str(featured.get("album") or "Álbum destacado")
+            artist = str(featured.get("artist") or "Artista desconocido")
+            cover = self._cover_pixmap(featured.get("cover_path"), title)
+            self.hero_artwork.setPixmap(cover.scaled(
+                168, 168,
+                Qt.AspectRatioMode.KeepAspectRatioByExpanding,
+                Qt.TransformationMode.SmoothTransformation,
+            ))
+            self.hero_artwork.setToolTip(f"{title} · {artist}")
+            self.hero_text_label.setText(f"{title}  ·  {artist}")
+            self.hero_action_button.set_label_text("Reproducir álbum")
+            self.hero_action_button.set_icon("play")
+            self.hero_action_button.setEnabled(True)
+        else:
+            self.hero_artwork.setPixmap(self._hero_artwork().scaled(
+                168, 168,
+                Qt.AspectRatioMode.KeepAspectRatioByExpanding,
+                Qt.TransformationMode.SmoothTransformation,
+            ))
+            self.hero_artwork.setToolTip("N3mesisFy")
+            self.hero_text_label.setText(
+                "Añade tus archivos para llenar tu espacio musical."
+                if not has_music else "Prueba otra búsqueda para encontrar tus álbumes."
+            )
+            self.hero_action_button.set_label_text("Explorar canciones")
+            self.hero_action_button.set_icon("arrow-right")
+            self.hero_action_button.setEnabled(has_music)
+            if not has_music:
+                self.hero_action_button.clicked.disconnect()
+                self.hero_action_button.clicked.connect(lambda: self.show_page("tracks"))
 
         self.home_section_header.setVisible(has_albums)
         self.home_album_scroll.setVisible(has_albums)
@@ -1007,7 +1055,7 @@ class MusicFyWindow(QMainWindow):
             self.home_empty_icon.set_icon("albums")
             self.home_empty_title.setText("Tu biblioteca empieza aquí")
             self.home_empty.setText(
-                "Añade tus archivos o selecciona una carpeta para reunir toda tu música."
+                "Importa tus canciones y N3mesisFy organizará automáticamente tus álbumes, artistas y carátulas."
             )
         elif not has_albums:
             self.home_empty_icon.set_icon("search")
@@ -1016,11 +1064,25 @@ class MusicFyWindow(QMainWindow):
                 "Prueba con otro título o artista, o borra la búsqueda para volver a tu colección."
             )
 
-        # In the empty state, make the action card the main content instead of
-        # leaving a large, unexplained blank region below the statistics.
-        if hasattr(self, "home_empty_card"):
-            for child in self.home_empty_card.findChildren(QPushButton):
-                child.setVisible(not has_music)
+        for child in self.home_empty_card.findChildren(QPushButton):
+            child.setVisible(not has_music)
+
+    def play_featured_album(self) -> None:
+        if not self.featured_album:
+            self.show_page("tracks")
+            return
+        record = self.featured_album
+        tracks = self.database.tracks_for_collection(
+            "album",
+            str(record.get("album") or ""),
+            str(record.get("artist") or ""),
+        )
+        if not tracks:
+            self.statusBar().showMessage("Este álbum no contiene canciones disponibles.", 4000)
+            return
+        self.queue = tracks
+        self.current_index = 0
+        self.play_track(tracks[0])
 
     def _render_collections(self) -> None:
         self._clear_grid(self.collection_grid)
