@@ -250,9 +250,10 @@ class IconButton(QPushButton):
 
 
 class CollectionCard(QFrame):
-    """Clickable album, artist or genre tile."""
+    """Clickable media tile with a hover-to-play action."""
 
     clicked = pyqtSignal()
+    play_requested = pyqtSignal()
 
     def __init__(
         self,
@@ -266,11 +267,18 @@ class CollectionCard(QFrame):
         self.setObjectName("collectionCard")
         self.setCursor(Qt.CursorShape.PointingHandCursor)
         self.setFixedWidth(182)
-        self.setMinimumHeight(252)
+        self.setMinimumHeight(268)
 
         layout = QVBoxLayout(self)
-        layout.setContentsMargins(10, 10, 10, 12)
+        layout.setContentsMargins(9, 9, 9, 12)
         layout.setSpacing(7)
+
+        artwork = QFrame()
+        artwork.setObjectName("collectionArtwork")
+        artwork.setFixedSize(160, 160)
+        artwork_layout = QGridLayout(artwork)
+        artwork_layout.setContentsMargins(0, 0, 8, 8)
+        artwork_layout.setSpacing(0)
 
         art = QLabel()
         art.setObjectName("collectionCover")
@@ -285,7 +293,19 @@ class CollectionCard(QFrame):
             )
         )
         art.setAttribute(Qt.WidgetAttribute.WA_TransparentForMouseEvents)
-        layout.addWidget(art, 0, Qt.AlignmentFlag.AlignHCenter)
+        artwork_layout.addWidget(art, 0, 0)
+
+        self.play_overlay = IconButton("play", icon_size=16, icon_color="#07131b")
+        self.play_overlay.setObjectName("cardPlayButton")
+        self.play_overlay.setFixedSize(40, 40)
+        self.play_overlay.setToolTip("Reproducir")
+        self.play_overlay.clicked.connect(self.play_requested.emit)
+        self.play_overlay.hide()
+        artwork_layout.addWidget(
+            self.play_overlay, 0, 0,
+            Qt.AlignmentFlag.AlignRight | Qt.AlignmentFlag.AlignBottom,
+        )
+        layout.addWidget(artwork, 0, Qt.AlignmentFlag.AlignHCenter)
 
         name = QLabel(title)
         name.setObjectName("collectionTitle")
@@ -303,6 +323,14 @@ class CollectionCard(QFrame):
         layout.addWidget(detail)
 
         self.kind = kind
+
+    def enterEvent(self, event: Any) -> None:
+        self.play_overlay.show()
+        super().enterEvent(event)
+
+    def leaveEvent(self, event: Any) -> None:
+        self.play_overlay.hide()
+        super().leaveEvent(event)
 
     def mousePressEvent(self, event: Any) -> None:
         if event.button() == Qt.MouseButton.LeftButton:
@@ -1037,6 +1065,7 @@ class MusicFyWindow(QMainWindow):
         for record in records[:12]:
             card = self._make_collection_card("album", record)
             card.clicked.connect(partial(self.show_collection_detail, "album", record))
+            card.play_requested.connect(partial(self.play_collection_record, "album", record))
             self.home_album_row.addWidget(card)
         self.home_album_row.addStretch(1)
 
@@ -1045,6 +1074,7 @@ class MusicFyWindow(QMainWindow):
         for record in playlists[:12]:
             card = self._make_collection_card("playlist", record)
             card.clicked.connect(partial(self.show_playlist_detail, record))
+            card.play_requested.connect(partial(self.play_playlist_record, record))
             self.home_playlist_row.addWidget(card)
         self.home_playlist_row.addStretch(1)
 
@@ -1106,6 +1136,34 @@ class MusicFyWindow(QMainWindow):
         for child in self.home_empty_card.findChildren(QPushButton):
             child.setVisible(not has_music)
 
+    def play_collection_record(
+        self,
+        kind: str,
+        record: dict[str, Any],
+    ) -> None:
+        value = (
+            record.get("album") if kind == "album"
+            else record.get("artist") if kind == "artist"
+            else record.get("genre")
+        )
+        tracks = self.database.tracks_for_collection(
+            kind,
+            str(value or ""),
+            str(record.get("artist") or "") if kind == "album" else None,
+        )
+        self._start_queue(tracks)
+
+    def play_playlist_record(self, record: dict[str, Any]) -> None:
+        self._start_queue(self.database.get_playlist_tracks(int(record["id"])))
+
+    def _start_queue(self, tracks: list[dict[str, Any]]) -> None:
+        if not tracks:
+            self.statusBar().showMessage("No hay canciones disponibles para reproducir.", 4000)
+            return
+        self.queue = list(tracks)
+        self.current_index = 0
+        self.play_track(self.queue[0])
+
     def play_featured_album(self) -> None:
         if not self.featured_album:
             self.show_page("tracks")
@@ -1162,8 +1220,10 @@ class MusicFyWindow(QMainWindow):
             card = self._make_collection_card(kind, record)
             if kind == "playlist":
                 card.clicked.connect(partial(self.show_playlist_detail, record))
+                card.play_requested.connect(partial(self.play_playlist_record, record))
             else:
                 card.clicked.connect(partial(self.show_collection_detail, kind, record))
+                card.play_requested.connect(partial(self.play_collection_record, kind, record))
             self.collection_grid.addWidget(card, index // 4, index % 4)
 
         if not records:
