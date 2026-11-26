@@ -8,11 +8,12 @@ from unittest.mock import patch
 
 os.environ.setdefault("QT_QPA_PLATFORM", "offscreen")
 
-from PyQt6.QtWidgets import QApplication
+from PyQt6.QtWidgets import QApplication, QListWidget, QListWidgetItem
 from PyQt6.QtGui import QPainter, QPixmap
 from PyQt6.QtCore import Qt
 
 from musicfy.app import MusicFyWindow, draw_vector_icon
+from musicfy.player_widgets import NowPlayingDialog
 
 
 class MusicFyWindowSmokeTests(unittest.TestCase):
@@ -107,12 +108,56 @@ class MusicFyWindowSmokeTests(unittest.TestCase):
 
 
 
+    def test_queue_order_can_be_rebuilt_after_drag_and_drop(self) -> None:
+        self.window.queue = [
+            {"path": "/music/a.mp3", "title": "A", "artist": "Artist"},
+            {"path": "/music/b.mp3", "title": "B", "artist": "Artist"},
+            {"path": "/music/c.mp3", "title": "C", "artist": "Artist"},
+        ]
+        self.window.current_index = 1
+        queue_widget = QListWidget()
+        for original_index in (2, 0, 1):
+            item = QListWidgetItem()
+            item.setData(Qt.ItemDataRole.UserRole, original_index)
+            queue_widget.addItem(item)
+
+        self.window._sync_queue_from_widget(queue_widget)
+
+        self.assertEqual(
+            [track["title"] for track in self.window.queue],
+            ["C", "A", "B"],
+        )
+        self.assertEqual(self.window.current_index, 2)
+        self.assertEqual(
+            [queue_widget.item(i).data(Qt.ItemDataRole.UserRole) for i in range(3)],
+            [0, 1, 2],
+        )
+
+    def test_expanded_player_dialog_receives_track_metadata(self) -> None:
+        dialog = NowPlayingDialog(self.window)
+        cover = QPixmap(48, 48)
+        cover.fill(Qt.GlobalColor.cyan)
+        dialog.set_track("Test track", "Test artist", cover)
+        dialog.set_playing(True)
+        dialog.set_levels([0.2, 0.5, 0.8])
+
+        self.assertEqual(dialog.title_label.text(), "Test track")
+        self.assertEqual(dialog.artist_label.text(), "Test artist")
+        self.assertEqual(dialog.play_button.text(), "Pausar")
+        self.assertGreater(max(dialog.visualizer._levels), 0.7)
+        dialog.close()
+
+    def test_audio_buffer_output_is_attached_when_qt_supports_it(self) -> None:
+        self.assertIsNotNone(self.window.audio_buffer_output)
+
+
+
     def test_vector_icon_set_paints_without_system_glyph_fonts(self) -> None:
         icon_names = (
             "home", "tracks", "albums", "artist", "genres", "star",
             "history", "plus", "folder", "globe", "arrow-right",
             "arrow-left", "search", "music-note", "play", "pause",
-            "previous", "next", "playlist", "shuffle", "repeat", "import", "export", "trash",
+            "previous", "next", "playlist", "shuffle", "repeat", "import", "export", "trash", "expand",
         )
         for icon_name in icon_names:
             with self.subTest(icon=icon_name):
