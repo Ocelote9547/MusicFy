@@ -298,16 +298,16 @@ class MusicFyWindow(QMainWindow):
     # ------------------------------------------------------------------
     def _build_ui(self) -> None:
         root = QWidget()
-        root_layout = QHBoxLayout(root)
-        root_layout.setContentsMargins(18, 18, 18, 18)
-        root_layout.setSpacing(15)
+        root_layout = QVBoxLayout(root)
+        root_layout.setContentsMargins(20, 14, 20, 14)
+        root_layout.setSpacing(13)
 
-        sidebar = self._build_sidebar()
-        root_layout.addWidget(sidebar)
+        root_layout.addWidget(self._build_top_bar())
+        root_layout.addWidget(self._build_top_navigation())
 
         content = QWidget()
         content_layout = QVBoxLayout(content)
-        content_layout.setContentsMargins(5, 3, 3, 0)
+        content_layout.setContentsMargins(2, 2, 2, 0)
         content_layout.setSpacing(15)
 
         header = QHBoxLayout()
@@ -328,7 +328,6 @@ class MusicFyWindow(QMainWindow):
 
         self.online_button = IconButton("globe", "URL online")
         self.online_button.setObjectName("secondaryButton")
-        self.online_button.setCursor(Qt.CursorShape.PointingHandCursor)
         self.online_button.clicked.connect(self.open_online_url)
         header.addWidget(self.online_button)
         content_layout.addLayout(header)
@@ -345,13 +344,11 @@ class MusicFyWindow(QMainWindow):
         add_files_button.set_icon_color("#06131b")
         add_files_button.set_label_color("#06131b")
         add_files_button.setObjectName("primaryButton")
-        add_files_button.setCursor(Qt.CursorShape.PointingHandCursor)
         add_files_button.clicked.connect(self.add_audio_files)
         action_row.addWidget(add_files_button)
 
         add_folder_button = IconButton("folder", "Añadir carpeta")
         add_folder_button.setObjectName("secondaryButton")
-        add_folder_button.setCursor(Qt.CursorShape.PointingHandCursor)
         add_folder_button.clicked.connect(self.add_music_folder)
         action_row.addWidget(add_folder_button)
         content_layout.addLayout(action_row)
@@ -367,80 +364,76 @@ class MusicFyWindow(QMainWindow):
         self.setCentralWidget(root)
         self.statusBar().showMessage("Listo para descubrir tu música.")
 
-    def _build_sidebar(self) -> QFrame:
-        sidebar = QFrame()
-        sidebar.setObjectName("sidebar")
-        sidebar.setFixedWidth(214)
-        side_layout = QVBoxLayout(sidebar)
-        side_layout.setContentsMargins(16, 22, 16, 18)
-        side_layout.setSpacing(7)
+    def _build_top_bar(self) -> QWidget:
+        bar = QWidget()
+        bar.setObjectName("topBar")
+        layout = QHBoxLayout(bar)
+        layout.setContentsMargins(3, 0, 3, 0)
+        layout.setSpacing(10)
 
-        brand_row = QHBoxLayout()
-        brand_mark = IconGlyph("music-note", "#ffffff", 23)
-        brand_mark.setObjectName("brandMark")
-        brand_mark.setFixedSize(38, 38)
-        brand_row.addWidget(brand_mark)
+        mark = IconGlyph("music-note", "#ffffff", 20)
+        mark.setObjectName("brandMark")
+        mark.setFixedSize(32, 32)
+        layout.addWidget(mark)
 
-        brand = QLabel("MusicFy")
-        brand.setObjectName("brand")
-        brand_row.addWidget(brand)
-        brand_row.addStretch(1)
-        side_layout.addLayout(brand_row)
+        brand = QLabel("MUSICFY")
+        brand.setObjectName("topBrand")
+        layout.addWidget(brand)
 
-        brand_caption = QLabel("YOUR MUSIC. YOUR SPACE.")
-        brand_caption.setObjectName("eyebrow")
-        side_layout.addWidget(brand_caption)
-        side_layout.addSpacing(25)
+        separator = QLabel("/")
+        separator.setObjectName("topBrandSeparator")
+        layout.addWidget(separator)
 
-        self._add_nav_group(side_layout, "DESCUBRIR", [
-            ("home", "Inicio", "home"),
-        ])
-        self._add_nav_group(side_layout, "TU COLECCIÓN", [
-            ("tracks", "Canciones", "tracks"),
-            ("albums", "Álbumes", "albums"),
-            ("artist", "Artistas", "artists"),
-            ("genres", "Géneros", "genres"),
-        ])
-        self._add_nav_group(side_layout, "TU MÚSICA", [
-            ("star", "Favoritos", "favorites"),
-            ("history", "Escuchado recientemente", "history"),
-        ])
+        caption = QLabel("N3MESIS STUDIO")
+        caption.setObjectName("topBrandCaption")
+        layout.addWidget(caption)
 
-        side_layout.addStretch(1)
+        layout.addStretch(1)
 
-        local_note = QLabel("TU MÚSICA\nSIEMPRE CONTIGO")
-        local_note.setObjectName("sidebar_note")
-        side_layout.addWidget(local_note)
+        version = QLabel("v0.3.1")
+        version.setObjectName("versionPill")
+        version.setAlignment(Qt.AlignmentFlag.AlignCenter)
+        layout.addWidget(version)
+        return bar
 
-        version = QLabel("MUSICFY  ·  0.3.1")
-        version.setObjectName("version")
-        side_layout.addWidget(version)
-        return sidebar
+    def _build_top_navigation(self) -> QFrame:
+        bar = QFrame()
+        bar.setObjectName("topNavigation")
+        bar.setFixedHeight(62)
+        layout = QHBoxLayout(bar)
+        layout.setContentsMargins(12, 8, 12, 8)
+        layout.setSpacing(7)
+        layout.addStretch(1)
 
-    def _add_nav_group(
-        self,
-        parent_layout: QVBoxLayout,
-        heading: str,
-        items: list[tuple[str, str, str]],
-    ) -> None:
-        label = QLabel(heading)
-        label.setObjectName("navGroupLabel")
-        parent_layout.addWidget(label)
+        items = [
+            ("home", "INICIO", "home"),
+            ("tracks", "CANCIONES", "tracks"),
+            ("albums", "ÁLBUMES", "albums"),
+            ("artist", "ARTISTAS", "artists"),
+            ("genres", "GÉNEROS", "genres"),
+            ("star", "FAVORITOS", "favorites"),
+            ("history", "HISTORIAL", "history"),
+        ]
         for icon_name, title, mode in items:
-            button = IconButton(icon_name, title)
-            button.setObjectName("navButton")
+            button = IconButton(icon_name, title, icon_size=16)
+            button.setObjectName("topNavButton")
             button.setCheckable(True)
             button.setChecked(mode == "home")
-            button.set_icon_color("#111820" if mode == "home" else "#aebac8")
+            button.setMinimumHeight(42)
+            button.setMinimumWidth(102)
+            button.set_icon_color("#101820" if mode == "home" else "#b1bdca")
             button.label_widget.setStyleSheet(
-                "color: #111820; font-weight: 750;" if mode == "home"
-                else "color: #aebac8; font-weight: 650;"
+                "color: #101820; font-weight: 800;" if mode == "home"
+                else "color: #b1bdca; font-weight: 750;"
             )
-            button.setCursor(Qt.CursorShape.PointingHandCursor)
-            button.clicked.connect(lambda _checked=False, selected=mode: self.show_page(selected))
-            parent_layout.addWidget(button)
+            button.clicked.connect(
+                lambda _checked=False, selected=mode: self.show_page(selected)
+            )
+            layout.addWidget(button)
             self.nav_buttons[mode] = button
-        parent_layout.addSpacing(12)
+
+        layout.addStretch(1)
+        return bar
 
     def _build_home_page(self) -> QWidget:
         page = QWidget()
