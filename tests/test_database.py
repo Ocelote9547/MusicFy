@@ -124,7 +124,7 @@ class MusicDatabaseTests(unittest.TestCase):
             "title": "Tagged title",
             "artist": "Tagged artist",
             "album": "Tagged album",
-            "duration": 180,
+            "duration": 0,
         })
         playlist_id = self.database.create_playlist("Road trip")
         self.database.save_playlist_tracks(
@@ -152,6 +152,7 @@ class MusicDatabaseTests(unittest.TestCase):
         tracks = self.database.get_playlist_tracks(playlist_id)
         self.assertEqual([item["title"] for item in tracks], ["Tagged title", "Offline song"])
         self.assertEqual(tracks[0]["artist"], "Tagged artist")
+        self.assertEqual(tracks[0]["duration"], 100)
         self.assertEqual(tracks[1]["path"], "/external/missing-song.mp3")
 
         self.database.remove_from_playlist(playlist_id, 0)
