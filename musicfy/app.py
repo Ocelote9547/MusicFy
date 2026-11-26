@@ -1775,6 +1775,7 @@ class MusicFyWindow(QMainWindow):
         self.search_box.selectAll()
 
     def open_sleep_timer(self, _checked: bool = False) -> None:
+        was_active = self.sleep_timer.isActive()
         minutes, accepted = QInputDialog.getInt(
             self,
             "Temporizador de apagado",
@@ -1785,6 +1786,8 @@ class MusicFyWindow(QMainWindow):
             5,
         )
         if not accepted:
+            self.sleep_button.setChecked(was_active)
+            self.sleep_button.set_icon_color("#12b8ee" if was_active else "#aab6c4")
             return
         if minutes == 0:
             self.sleep_timer.stop()
