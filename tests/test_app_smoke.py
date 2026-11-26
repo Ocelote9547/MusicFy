@@ -154,6 +154,56 @@ class MusicFyWindowSmokeTests(unittest.TestCase):
 
 
 
+    def test_local_radio_builds_related_queue_from_artist_and_genre(self) -> None:
+        self.window.database.save_tracks([
+            {
+                "path": "/music/seed.mp3",
+                "title": "Seed",
+                "artist": "Alpha",
+                "album": "First",
+                "genre": "Pop",
+            },
+            {
+                "path": "/music/artist.mp3",
+                "title": "Same artist",
+                "artist": "Alpha",
+                "album": "Second",
+                "genre": "Rock",
+            },
+            {
+                "path": "/music/genre.mp3",
+                "title": "Same genre",
+                "artist": "Beta",
+                "album": "Third",
+                "genre": "Pop",
+            },
+            {
+                "path": "/music/unrelated.mp3",
+                "title": "Unrelated",
+                "artist": "Gamma",
+                "album": "Fourth",
+                "genre": "Jazz",
+            },
+        ])
+        seed = next(
+            track for track in self.window.database.list_tracks()
+            if track["path"] == "/music/seed.mp3"
+        )
+
+        with patch.object(self.window, "play_track") as play:
+            self.window.start_local_radio(seed)
+
+        queue_paths = [track["path"] for track in self.window.queue]
+        self.assertEqual(queue_paths[0], "/music/seed.mp3")
+        self.assertEqual(
+            set(queue_paths),
+            {"/music/seed.mp3", "/music/artist.mp3", "/music/genre.mp3"},
+        )
+        self.assertEqual(len(queue_paths), len(set(queue_paths)))
+        play.assert_called_once_with(seed)
+
+
+
     def test_expanded_player_dialog_receives_track_metadata(self) -> None:
         dialog = NowPlayingDialog(self.window)
         cover = QPixmap(48, 48)
