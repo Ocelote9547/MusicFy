@@ -360,3 +360,73 @@ QScrollBar::handle:horizontal {
 }
 QScrollBar::add-line:horizontal, QScrollBar::sub-line:horizontal { width: 0; }
 QMessageBox, QInputDialog, QFileDialog { background: #101216; }
+
+
+/* Launcher-inspired chrome: thin studio header and horizontal capsule navigation */
+QWidget#topBar { background: transparent; }
+QLabel#brandMark {
+    background: #0b3040;
+    border: 2px solid #12aee9;
+    border-radius: 10px;
+}
+QLabel#topBrand {
+    color: #f5f7fa;
+    font-size: 13px;
+    font-weight: 900;
+    letter-spacing: 2.3px;
+}
+QLabel#topBrandSeparator {
+    color: #58616d;
+    font-size: 13px;
+    font-weight: 500;
+}
+QLabel#topBrandCaption {
+    color: #8994a1;
+    font-size: 9px;
+    font-weight: 850;
+    letter-spacing: 2.2px;
+}
+QLabel#versionPill {
+    color: #aeb7c2;
+    background: #101216;
+    border: 1px solid #292d33;
+    border-radius: 11px;
+    min-width: 58px;
+    min-height: 32px;
+    padding: 0 9px;
+    font-size: 9px;
+    font-weight: 800;
+}
+QFrame#topNavigation {
+    background: #0d0e11;
+    border: 1px solid #272a30;
+    border-radius: 17px;
+}
+QPushButton#topNavButton {
+    color: #aeb9c6;
+    background: transparent;
+    border: 1px solid transparent;
+    border-radius: 11px;
+    padding: 8px 12px;
+    min-height: 40px;
+    font-size: 9px;
+    font-weight: 800;
+    letter-spacing: .6px;
+}
+QPushButton#topNavButton:hover {
+    color: #f1f4f7;
+    background: #17191d;
+    border-color: #292d33;
+}
+QPushButton#topNavButton:checked {
+    color: #101820;
+    background: #f4f6f8;
+    border: 1px solid #f4f6f8;
+}
+QPushButton#topNavButton QLabel {
+    background: transparent;
+    font-size: 9px;
+}
+QPushButton#topNavButton:checked QLabel {
+    color: #101820;
+}
