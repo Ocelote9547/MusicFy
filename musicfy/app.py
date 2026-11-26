@@ -154,6 +154,12 @@ def draw_vector_icon(painter: QPainter, name: str, color: str, size: int) -> Non
         path.moveTo(12, 15); path.lineTo(12, 3); path.moveTo(7, 8); path.lineTo(12, 3)
         path.lineTo(17, 8); path.moveTo(4, 15); path.lineTo(4, 21); path.lineTo(20, 21)
         path.lineTo(20, 15); painter.drawPath(path)
+    elif name == "expand":
+        path.moveTo(4, 9); path.lineTo(4, 4); path.lineTo(9, 4)
+        path.moveTo(15, 4); path.lineTo(20, 4); path.lineTo(20, 9)
+        path.moveTo(20, 15); path.lineTo(20, 20); path.lineTo(15, 20)
+        path.moveTo(9, 20); path.lineTo(4, 20); path.lineTo(4, 15)
+        painter.drawPath(path)
     elif name == "trash":
         painter.drawRoundedRect(QRectF(6, 7, 12, 14), 2.0, 2.0)
         painter.drawLine(QLineF(4, 5, 20, 5))
@@ -577,26 +583,29 @@ class MusicFyWindow(QMainWindow):
         self.home_page_scroll = scroll
         page = QWidget()
         page.setObjectName("homePageContent")
+        page.setMinimumWidth(0)
         layout = QVBoxLayout(page)
-        layout.setContentsMargins(0, 0, 0, 0)
-        layout.setSpacing(17)
+        layout.setContentsMargins(3, 3, 8, 18)
+        layout.setSpacing(15)
 
         # Editorial hero: headline, useful action and custom MusicFy artwork.
         hero = QFrame()
         hero.setObjectName("heroBanner")
-        hero.setMinimumHeight(232)
-        hero.setMaximumHeight(244)
+        hero.setMinimumHeight(244)
+        hero.setMaximumHeight(252)
         hero_layout = QHBoxLayout(hero)
-        hero_layout.setContentsMargins(30, 24, 26, 24)
+        hero_layout.setContentsMargins(30, 27, 26, 27)
         hero_layout.setSpacing(12)
 
         copy = QVBoxLayout()
-        copy.setSpacing(8)
+        copy.setSpacing(9)
+        copy.setAlignment(Qt.AlignmentFlag.AlignVCenter)
         hero_kicker = QLabel("TU COLECCIÓN · TU BIBLIOTECA")
         hero_kicker.setObjectName("heroKicker")
         copy.addWidget(hero_kicker)
 
         hero_title = QLabel("Tu música,\na tu manera.")
+        hero_title.setMinimumHeight(88)
         hero_title.setMinimumHeight(86)
         hero_title.setObjectName("heroTitle")
         copy.addWidget(hero_title)
@@ -623,6 +632,7 @@ class MusicFyWindow(QMainWindow):
         self.hero_artwork = QLabel()
         self.hero_artwork.setObjectName("heroArtwork")
         self.hero_artwork.setFixedSize(188, 188)
+        self.hero_artwork.setScaledContents(False)
         self.hero_artwork.setAlignment(Qt.AlignmentFlag.AlignCenter)
         self.hero_artwork.setPixmap(
             self._hero_artwork().scaled(
@@ -766,6 +776,7 @@ class MusicFyWindow(QMainWindow):
         empty_layout.addLayout(empty_actions)
         layout.addWidget(self.home_empty_card, 1)
         scroll.setWidget(page)
+        scroll.verticalScrollBar().setValue(0)
         return scroll
 
     def _build_tracks_page(self) -> QWidget:
@@ -1684,7 +1695,7 @@ class MusicFyWindow(QMainWindow):
         self.now_playing_dialog.set_playing(
             self.player.playbackState() == QMediaPlayer.PlaybackState.PlayingState
         )
-        self.now_playing_dialog.show()
+        self.now_playing_dialog.showMaximized()
         self.now_playing_dialog.raise_()
         self.now_playing_dialog.activateWindow()
 
