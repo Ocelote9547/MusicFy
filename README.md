@@ -2,11 +2,11 @@
 
 Reproductor musical de escritorio desarrollado con **Python + PyQt6**, siguiendo la identidad visual AURORA de N3mesis Launcher.
 
-## Biblioteca premium (0.2.0)
+## Biblioteca premium (0.2.1)
 
-- Inicio con resumen de la colección y acceso visual a los álbumes de la biblioteca.
+- Inicio editorial con ilustración MusicFy, métricas compactas, carrusel horizontal de álbumes y un estado vacío con acciones directas.
 - Vistas de canciones, álbumes, artistas y géneros.
-- Fichas visuales de álbumes con sus carátulas.
+- Fichas visuales de álbumes con sus carátulas.\n- Navegación rediseñada y superficies transparentes para evitar bloques de fondo en etiquetas.
 - Extracción de portadas incrustadas en los archivos y búsqueda de imágenes de carpeta (`cover.jpg`, `folder.jpg`, `front.jpg`).
 - Caché local de carátulas en `~/.musicfy/covers` para evitar volver a extraerlas en cada arranque.
 - Favoritos, historial, búsqueda global, menú contextual y reproducción desde las fichas.
