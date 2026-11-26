@@ -28,6 +28,8 @@ def read_audio_file(file_path: str | Path) -> dict[str, Any] | None:
     album = "Álbum desconocido"
     genre = "Sin género"
     duration = 0.0
+    lyrics = ""
+    replaygain_track_gain = ""
     cover_path: str | None = None
 
     try:
@@ -38,6 +40,13 @@ def read_audio_file(file_path: str | Path) -> dict[str, Any] | None:
             artist = _first_tag(tags, "artist") or artist
             album = _first_tag(tags, "album") or album
             genre = _first_tag(tags, "genre") or genre
+            lyrics = (
+                _first_tag(tags, "lyrics")
+                or _first_tag(tags, "unsyncedlyrics")
+                or _first_tag(tags, "unsynced_lyrics")
+                or ""
+            )
+            replaygain_track_gain = _first_tag(tags, "replaygain_track_gain") or ""
             info = getattr(audio, "info", None)
             duration = float(getattr(info, "length", 0.0) or 0.0)
     except Exception:
@@ -63,6 +72,8 @@ def read_audio_file(file_path: str | Path) -> dict[str, Any] | None:
         "genre": genre,
         "duration": duration,
         "cover_path": cover_path,
+        "lyrics": lyrics,
+        "replaygain_track_gain": replaygain_track_gain,
     }
 
 
