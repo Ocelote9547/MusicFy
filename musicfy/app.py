@@ -1,11 +1,12 @@
 from __future__ import annotations
 
 import hashlib
+import random
 from functools import partial
 from pathlib import Path
 from typing import Any
 
-from PyQt6.QtCore import Qt, QUrl, pyqtSignal, QRectF, QLineF
+from PyQt6.QtCore import Qt, QUrl, pyqtSignal, QRectF, QLineF, QTimer
 from PyQt6.QtGui import (
     QAction,
     QColor,
@@ -20,12 +21,16 @@ from PyQt6.QtGui import (
 from PyQt6.QtMultimedia import QAudioOutput, QMediaPlayer
 from PyQt6.QtWidgets import (
     QFileDialog,
+    QDialog,
+    QDialogButtonBox,
     QFrame,
     QGridLayout,
     QHBoxLayout,
     QInputDialog,
     QLabel,
     QLineEdit,
+    QListWidget,
+    QListWidgetItem,
     QMainWindow,
     QMenu,
     QMessageBox,
@@ -42,8 +47,9 @@ from PyQt6.QtWidgets import (
 )
 
 from musicfy.database import MusicDatabase
-from musicfy.library import read_audio_file, scan_folder
+from musicfy.library import LibraryImportWorker
 from musicfy.online import OnlineResolver
+from musicfy.playlists import parse_m3u, write_m3u
 
 
 def draw_vector_icon(painter: QPainter, name: str, color: str, size: int) -> None:
@@ -117,6 +123,37 @@ def draw_vector_icon(painter: QPainter, name: str, color: str, size: int) -> Non
         painter.drawLine(QLineF(10, 18, 4, 12))
     elif name == "search":
         painter.drawEllipse(QRectF(3, 3, 13, 13)); painter.drawLine(QLineF(15, 15, 21, 21))
+    elif name == "playlist":
+        painter.drawLine(QLineF(4, 6, 16, 6))
+        painter.drawLine(QLineF(4, 12, 16, 12))
+        painter.drawLine(QLineF(4, 18, 10, 18))
+        painter.drawEllipse(QRectF(15, 16, 5, 5))
+    elif name == "shuffle":
+        path.moveTo(3, 6); path.lineTo(6, 6); path.cubicTo(10, 6, 14, 18, 18, 18)
+        path.lineTo(21, 18); path.moveTo(17, 14); path.lineTo(21, 18); path.lineTo(17, 22)
+        path.moveTo(3, 18); path.lineTo(6, 18); path.cubicTo(10, 18, 14, 6, 18, 6)
+        path.lineTo(21, 6); path.moveTo(17, 2); path.lineTo(21, 6); path.lineTo(17, 10)
+        painter.drawPath(path)
+    elif name == "repeat":
+        path.moveTo(4, 9); path.lineTo(4, 7); path.quadTo(4, 4, 7, 4)
+        path.lineTo(18, 4); path.lineTo(15, 1); path.moveTo(18, 4); path.lineTo(15, 7)
+        path.moveTo(20, 15); path.lineTo(20, 17); path.quadTo(20, 20, 17, 20)
+        path.lineTo(6, 20); path.lineTo(9, 17); path.moveTo(6, 20); path.lineTo(9, 23)
+        painter.drawPath(path)
+    elif name == "import":
+        path.moveTo(12, 3); path.lineTo(12, 15); path.moveTo(7, 10); path.lineTo(12, 15)
+        path.lineTo(17, 10); path.moveTo(4, 17); path.lineTo(4, 21); path.lineTo(20, 21)
+        path.lineTo(20, 17); painter.drawPath(path)
+    elif name == "export":
+        path.moveTo(12, 15); path.lineTo(12, 3); path.moveTo(7, 8); path.lineTo(12, 3)
+        path.lineTo(17, 8); path.moveTo(4, 15); path.lineTo(4, 21); path.lineTo(20, 21)
+        path.lineTo(20, 15); painter.drawPath(path)
+    elif name == "trash":
+        painter.drawRoundedRect(QRectF(6, 7, 12, 14), 2.0, 2.0)
+        painter.drawLine(QLineF(4, 5, 20, 5))
+        painter.drawLine(QLineF(9, 3, 15, 3))
+        painter.drawLine(QLineF(10, 10, 10, 18))
+        painter.drawLine(QLineF(14, 10, 14, 18))
     elif name == "music-note":
         path.moveTo(15, 4); path.lineTo(15, 16); path.moveTo(15, 5)
         path.lineTo(21, 3.5); path.lineTo(21, 15)
@@ -181,11 +218,15 @@ class IconButton(QPushButton):
         self.setCursor(Qt.CursorShape.PointingHandCursor)
         self.setAccessibleName(label or icon_name.replace("-", " "))
         self._button_layout = QHBoxLayout(self)
+        self.setSizePolicy(QSizePolicy.Policy.Minimum, QSizePolicy.Policy.Fixed)
+        self.setMinimumHeight(36)
+        self.setMinimumWidth(max(92, icon_size + len(label) * 7 + 42) if label else icon_size + 12)
         self._button_layout.setContentsMargins(12, 0, 12, 0)
         self._button_layout.setSpacing(9)
         self.icon_widget = IconGlyph(icon_name, icon_color, icon_size, self)
         self._button_layout.addWidget(self.icon_widget, 0, Qt.AlignmentFlag.AlignVCenter)
         self.label_widget = QLabel(label, self)
+        self.label_widget.setSizePolicy(QSizePolicy.Policy.Preferred, QSizePolicy.Policy.Preferred)
         self.label_widget.setAttribute(Qt.WidgetAttribute.WA_TransparentForMouseEvents)
         self._button_layout.addWidget(self.label_widget, 0, Qt.AlignmentFlag.AlignVCenter)
         self._button_layout.addStretch(1)
@@ -267,7 +308,7 @@ class CollectionCard(QFrame):
 class MusicFyWindow(QMainWindow):
     def __init__(self) -> None:
         super().__init__()
-        self.setWindowTitle("MusicFy")
+        self.setWindowTitle("N3mesisFy")
         self.setObjectName("musicFyWindow")
         self.resize(1360, 880)
         self.setMinimumSize(1000, 700)
@@ -279,6 +320,11 @@ class MusicFyWindow(QMainWindow):
         self.player.setAudioOutput(self.audio_output)
 
         self.page_mode = "home"
+        self.active_playlist_id: int | None = None
+        self.import_worker: LibraryImportWorker | None = None
+        self.imported_count = 0
+        self.shuffle_enabled = False
+        self.repeat_mode = "off"
         self.last_collection_mode = "albums"
         self.active_collection: dict[str, Any] | None = None
         self.visible_tracks: list[dict[str, Any]] = []
@@ -287,6 +333,10 @@ class MusicFyWindow(QMainWindow):
         self.current_index = -1
         self.online_resolver: OnlineResolver | None = None
         self.nav_buttons: dict[str, QPushButton] = {}
+        self.search_timer = QTimer(self)
+        self.search_timer.setSingleShot(True)
+        self.search_timer.setInterval(180)
+        self.search_timer.timeout.connect(self.refresh_content)
 
         self._build_ui()
         self._connect_player()
