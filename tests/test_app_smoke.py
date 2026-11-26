@@ -70,6 +70,15 @@ class MusicFyWindowSmokeTests(unittest.TestCase):
         self.assertFalse(self.window.home_playlist_section.isHidden())
         self.assertEqual(self.window.featured_album["album"], "Blue Horizon")
 
+        card = self.window._make_collection_card(
+            "album", self.window.database.list_albums()[0]
+        )
+        play_requests: list[bool] = []
+        card.play_requested.connect(lambda: play_requests.append(True))
+        card.play_overlay.show()
+        card.play_overlay.click()
+        self.assertEqual(play_requests, [True])
+
 
 
     def test_playlist_navigation_is_available(self) -> None:
