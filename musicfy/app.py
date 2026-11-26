@@ -1695,7 +1695,7 @@ class MusicFyWindow(QMainWindow):
         self.now_playing_dialog.set_playing(
             self.player.playbackState() == QMediaPlayer.PlaybackState.PlayingState
         )
-        self.now_playing_dialog.showMaximized()
+        self.now_playing_dialog.showFullScreen()
         self.now_playing_dialog.raise_()
         self.now_playing_dialog.activateWindow()
 
