@@ -29,6 +29,10 @@ class MusicDatabase:
                     genre TEXT NOT NULL DEFAULT 'Sin género',
                     duration REAL NOT NULL DEFAULT 0,
                     cover_path TEXT,
+                    lyrics TEXT NOT NULL DEFAULT '',
+                    replaygain_track_gain TEXT NOT NULL DEFAULT '',
+                    play_count INTEGER NOT NULL DEFAULT 0,
+                    date_added TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP,
                     is_favorite INTEGER NOT NULL DEFAULT 0,
                     last_played TEXT
                 )
@@ -43,6 +47,10 @@ class MusicDatabase:
             migrations = {
                 "genre": "ALTER TABLE tracks ADD COLUMN genre TEXT NOT NULL DEFAULT 'Sin género'",
                 "cover_path": "ALTER TABLE tracks ADD COLUMN cover_path TEXT",
+                "lyrics": "ALTER TABLE tracks ADD COLUMN lyrics TEXT NOT NULL DEFAULT ''",
+                "replaygain_track_gain": "ALTER TABLE tracks ADD COLUMN replaygain_track_gain TEXT NOT NULL DEFAULT ''",
+                "play_count": "ALTER TABLE tracks ADD COLUMN play_count INTEGER NOT NULL DEFAULT 0",
+                "date_added": "ALTER TABLE tracks ADD COLUMN date_added TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP",
             }
             for column, statement in migrations.items():
                 if column not in columns:
@@ -91,6 +99,8 @@ class MusicDatabase:
                 "genre": str(track.get("genre") or "Sin género"),
                 "duration": float(track.get("duration") or 0),
                 "cover_path": track.get("cover_path"),
+                "lyrics": str(track.get("lyrics") or ""),
+                "replaygain_track_gain": str(track.get("replaygain_track_gain") or ""),
             }
             for track in tracks
             if track.get("path")
@@ -101,10 +111,12 @@ class MusicDatabase:
             self.connection.executemany(
                 """
                 INSERT INTO tracks(
-                    path, title, artist, album, genre, duration, cover_path
+                    path, title, artist, album, genre, duration, cover_path,
+                    lyrics, replaygain_track_gain
                 )
                 VALUES(
-                    :path, :title, :artist, :album, :genre, :duration, :cover_path
+                    :path, :title, :artist, :album, :genre, :duration, :cover_path,
+                    :lyrics, :replaygain_track_gain
                 )
                 ON CONFLICT(path) DO UPDATE SET
                     title=excluded.title,
@@ -112,7 +124,9 @@ class MusicDatabase:
                     album=excluded.album,
                     genre=excluded.genre,
                     duration=excluded.duration,
-                    cover_path=COALESCE(excluded.cover_path, tracks.cover_path)
+                    cover_path=COALESCE(excluded.cover_path, tracks.cover_path),
+                    lyrics=CASE WHEN excluded.lyrics != '' THEN excluded.lyrics ELSE tracks.lyrics END,
+                    replaygain_track_gain=CASE WHEN excluded.replaygain_track_gain != '' THEN excluded.replaygain_track_gain ELSE tracks.replaygain_track_gain END
                 """,
                 values,
             )
@@ -128,6 +142,10 @@ class MusicDatabase:
                 "SELECT * FROM tracks WHERE last_played IS NOT NULL "
                 "ORDER BY last_played DESC LIMIT 100"
             )
+        elif mode == "recent_added":
+            query = "SELECT * FROM tracks ORDER BY date_added DESC LIMIT 100"
+        elif mode == "most_played":
+            query = "SELECT * FROM tracks ORDER BY play_count DESC, last_played DESC LIMIT 100"
         else:
             query = (
                 "SELECT * FROM tracks "
@@ -349,7 +367,10 @@ class MusicDatabase:
                 COALESCE(t.genre, 'Sin género') AS genre,
                 COALESCE(NULLIF(t.duration, 0), pt.duration, 0) AS duration,
                 t.cover_path AS cover_path,
+                COALESCE(t.lyrics, '') AS lyrics,
+                COALESCE(t.replaygain_track_gain, '') AS replaygain_track_gain,
                 COALESCE(t.is_favorite, 0) AS is_favorite,
+                COALESCE(t.play_count, 0) AS play_count,
                 t.last_played AS last_played,
                 CASE WHEN t.path IS NULL THEN 0 ELSE 1 END AS in_library
             FROM playlist_tracks pt
@@ -388,7 +409,11 @@ class MusicDatabase:
     def mark_played(self, path: str) -> None:
         with self.connection:
             self.connection.execute(
-                "UPDATE tracks SET last_played=CURRENT_TIMESTAMP WHERE path=?",
+                """
+                UPDATE tracks
+                SET last_played=CURRENT_TIMESTAMP, play_count=play_count + 1
+                WHERE path=?
+                """,
                 (path,),
             )
 
