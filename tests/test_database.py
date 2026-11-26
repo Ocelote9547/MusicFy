@@ -87,7 +87,9 @@ class MusicDatabaseTests(unittest.TestCase):
         self.database.close()
         db_path = self.home / ".musicfy" / "library.sqlite3"
         connection = sqlite3.connect(db_path)
-        connection.execute(
+        try:
+            connection.execute("DROP TABLE IF EXISTS tracks")
+            connection.execute(
             """
             CREATE TABLE tracks (
                 path TEXT PRIMARY KEY,
@@ -100,12 +102,13 @@ class MusicDatabaseTests(unittest.TestCase):
             )
             """
         )
-        connection.execute(
-            "INSERT INTO tracks(path,title,artist,album,duration) VALUES(?,?,?,?,?)",
-            ("/music/legacy.mp3", "Legacy track", "Legacy artist", "Legacy album", 90),
-        )
-        connection.commit()
-        connection.close()
+            connection.execute(
+                "INSERT INTO tracks(path,title,artist,album,duration) VALUES(?,?,?,?,?)",
+                ("/music/legacy.mp3", "Legacy track", "Legacy artist", "Legacy album", 90),
+            )
+            connection.commit()
+        finally:
+            connection.close()
 
         self.database = MusicDatabase()
         tracks = self.database.list_tracks()
