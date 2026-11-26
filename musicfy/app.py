@@ -1480,18 +1480,95 @@ class MusicFyWindow(QMainWindow):
 
     def skip_track(self, offset: int) -> None:
         if not self.queue:
-            tracks = self.database.list_tracks("all")
+            tracks = self.visible_tracks or self.database.list_tracks("all")
             if not tracks:
                 return
-            self.queue = tracks
-            self.current_index = 0 if offset > 0 else len(self.queue) - 1
+            self.queue = list(tracks)
+            self.current_index = -1 if offset > 0 else 0
+
+        if self.shuffle_enabled and offset > 0 and len(self.queue) > 1:
+            candidates = [index for index in range(len(self.queue)) if index != self.current_index]
+            self.current_index = random.choice(candidates)
         else:
             self.current_index = (self.current_index + offset) % len(self.queue)
         self.play_track(self.queue[self.current_index])
 
+    def toggle_shuffle(self, checked: bool) -> None:
+        self.shuffle_enabled = bool(checked)
+        self.shuffle_button.set_icon_color("#12aee9" if checked else "#aab6c4")
+        self.statusBar().showMessage(
+            "Reproducción aleatoria activada." if checked
+            else "Reproducción aleatoria desactivada.", 3000
+        )
+
+    def cycle_repeat_mode(self, _checked: bool = False) -> None:
+        modes = ("off", "all", "one")
+        self.repeat_mode = modes[(modes.index(self.repeat_mode) + 1) % len(modes)]
+        labels = {
+            "off": "Repetición desactivada",
+            "all": "Repetir toda la cola",
+            "one": "Repetir una canción",
+        }
+        self.repeat_button.setToolTip(labels[self.repeat_mode])
+        self.repeat_button.set_icon_color(
+            "#12aee9" if self.repeat_mode != "off" else "#aab6c4"
+        )
+        self.statusBar().showMessage(labels[self.repeat_mode], 3000)
+
+    def show_queue(self) -> None:
+        dialog = QDialog(self)
+        dialog.setWindowTitle("Cola de reproducción")
+        dialog.resize(520, 480)
+        layout = QVBoxLayout(dialog)
+        title = QLabel("Siguiente en la cola")
+        title.setObjectName("sectionTitle")
+        layout.addWidget(title)
+        queue_list = QListWidget()
+        queue_list.setObjectName("queueList")
+        for index, track in enumerate(self.queue):
+            item = QListWidgetItem(
+                f'{index + 1:02d}   {track.get("title", "Pista")}   —   {track.get("artist", "Artista desconocido")}'
+            )
+            item.setData(Qt.ItemDataRole.UserRole, index)
+            queue_list.addItem(item)
+        if self.current_index >= 0 and self.current_index < queue_list.count():
+            queue_list.setCurrentRow(self.current_index)
+        queue_list.itemDoubleClicked.connect(
+            lambda item: self._play_queue_index(int(item.data(Qt.ItemDataRole.UserRole)), dialog)
+        )
+        layout.addWidget(queue_list, 1)
+        buttons = QDialogButtonBox(QDialogButtonBox.StandardButton.Close)
+        buttons.rejected.connect(dialog.reject)
+        buttons.accepted.connect(dialog.accept)
+        layout.addWidget(buttons)
+        dialog.exec()
+
+    def _play_queue_index(self, index: int, dialog: QDialog) -> None:
+        if 0 <= index < len(self.queue):
+            self.current_index = index
+            self.play_track(self.queue[index])
+            dialog.accept()
+
     def handle_media_status(self, status: QMediaPlayer.MediaStatus) -> None:
-        if status == QMediaPlayer.MediaStatus.EndOfMedia and self.queue:
-            self.skip_track(1)
+        if status != QMediaPlayer.MediaStatus.EndOfMedia or not self.queue:
+            return
+        if self.repeat_mode == "one":
+            self.player.setPosition(0)
+            self.player.play()
+            return
+        if self.shuffle_enabled and len(self.queue) > 1:
+            candidates = [index for index in range(len(self.queue)) if index != self.current_index]
+            self.current_index = random.choice(candidates)
+            self.play_track(self.queue[self.current_index])
+            return
+        if self.current_index + 1 < len(self.queue):
+            self.current_index += 1
+            self.play_track(self.queue[self.current_index])
+        elif self.repeat_mode == "all":
+            self.current_index = 0
+            self.play_track(self.queue[self.current_index])
+        else:
+            self.player.stop()
 
     def update_play_button(self, state: QMediaPlayer.PlaybackState) -> None:
         self.play_button.set_icon(
@@ -1528,18 +1605,57 @@ class MusicFyWindow(QMainWindow):
         play_action.triggered.connect(lambda: self.play_track_from_path(path))
         menu.addAction(play_action)
 
-        favorite_text = "Quitar de favoritos" if track["is_favorite"] else "Añadir a favoritos"
-        favorite_action = QAction(favorite_text, self)
-        favorite_action.triggered.connect(
-            lambda: self.toggle_favorite(path, not bool(track["is_favorite"]))
-        )
-        menu.addAction(favorite_action)
+        if track.get("in_library", 1):
+            favorite_text = "Quitar de favoritos" if track.get("is_favorite") else "Añadir a favoritos"
+            favorite_action = QAction(favorite_text, self)
+            favorite_action.triggered.connect(
+                lambda: self.toggle_favorite(path, not bool(track.get("is_favorite")))
+            )
+            menu.addAction(favorite_action)
 
-        remove_action = QAction("Retirar de la biblioteca", self)
-        remove_action.triggered.connect(lambda: self.remove_from_library(path))
-        menu.addSeparator()
-        menu.addAction(remove_action)
+        playlists = self.database.list_playlists()
+        if playlists:
+            playlist_menu = menu.addMenu("Añadir a playlist")
+            for playlist in playlists:
+                action = QAction(str(playlist["name"]), self)
+                action.triggered.connect(
+                    lambda _checked=False, pid=int(playlist["id"]), item=track:
+                        self.add_track_to_playlist(pid, item)
+                )
+                playlist_menu.addAction(action)
+
+        if self.page_mode == "playlist_detail" and self.active_playlist_id is not None:
+            menu.addSeparator()
+            remove_from_playlist = QAction("Quitar de esta playlist", self)
+            position_in_playlist = int(track.get("playlist_position", row))
+            remove_from_playlist.triggered.connect(
+                lambda: self.remove_track_from_active_playlist(position_in_playlist)
+            )
+            menu.addAction(remove_from_playlist)
+
+        if track.get("in_library", 1):
+            remove_action = QAction("Retirar de la biblioteca", self)
+            remove_action.triggered.connect(lambda: self.remove_from_library(path))
+            menu.addSeparator()
+            menu.addAction(remove_action)
         menu.exec(self.table.viewport().mapToGlobal(position))
+
+    def add_track_to_playlist(self, playlist_id: int, track: dict[str, Any]) -> None:
+        self.database.add_to_playlist(playlist_id, track)
+        self.statusBar().showMessage("Canción añadida a la playlist.", 4000)
+        if self.page_mode == "playlists":
+            self.refresh_content()
+
+    def remove_track_from_active_playlist(self, position: int) -> None:
+        if self.active_playlist_id is None:
+            return
+        self.database.remove_from_playlist(self.active_playlist_id, position)
+        record = self.database.get_playlist(self.active_playlist_id)
+        if record:
+            self.page_subtitle.setText(
+                f'{int(record.get("track_count") or 0)} canciones  ·  Playlist local'
+            )
+        self.refresh_content()
 
     def play_track_from_path(self, path: str) -> None:
         self.queue = list(self.visible_tracks)
