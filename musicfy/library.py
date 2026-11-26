@@ -2,12 +2,13 @@ from __future__ import annotations
 
 import base64
 import hashlib
+import os
 from pathlib import Path
 from typing import Any
 
 from mutagen import File as MutagenFile
 from mutagen.flac import Picture
-from PyQt6.QtCore import Qt
+from PyQt6.QtCore import Qt, QThread, pyqtSignal
 from PyQt6.QtGui import QImage
 
 AUDIO_EXTENSIONS = {
@@ -184,3 +185,70 @@ def scan_folder(folder: str | Path) -> list[dict[str, Any]]:
             if track is not None:
                 tracks.append(track)
     return tracks
+
+
+
+class LibraryImportWorker(QThread):
+    """Scan folders/files without blocking the Qt GUI thread."""
+
+    batch_ready = pyqtSignal(list)
+    progress = pyqtSignal(str, int)
+    completed = pyqtSignal(int)
+    failed = pyqtSignal(str)
+
+    def __init__(
+        self,
+        folder: str | Path | None = None,
+        paths: list[str] | None = None,
+        batch_size: int = 24,
+    ) -> None:
+        super().__init__()
+        self.folder = Path(folder).expanduser() if folder else None
+        self.paths = [Path(path).expanduser() for path in (paths or [])]
+        self.batch_size = max(1, batch_size)
+
+    def _iter_audio_paths(self):
+        if self.folder is not None:
+            def on_walk_error(_error: OSError) -> None:
+                # Ignore inaccessible subdirectories instead of aborting the scan.
+                return
+
+            for root, _directories, filenames in os.walk(
+                self.folder,
+                onerror=on_walk_error,
+                followlinks=False,
+            ):
+                if self.isInterruptionRequested():
+                    return
+                for filename in filenames:
+                    path = Path(root) / filename
+                    if path.suffix.lower() in AUDIO_EXTENSIONS:
+                        yield path
+        else:
+            for path in self.paths:
+                if path.suffix.lower() in AUDIO_EXTENSIONS:
+                    yield path
+
+    def run(self) -> None:
+        total = 0
+        batch: list[dict[str, Any]] = []
+        try:
+            for path in self._iter_audio_paths():
+                if self.isInterruptionRequested():
+                    break
+                track = read_audio_file(path)
+                if track is None:
+                    continue
+                batch.append(track)
+                total += 1
+                if len(batch) >= self.batch_size:
+                    self.batch_ready.emit(batch)
+                    batch = []
+                if total == 1 or total % 12 == 0:
+                    self.progress.emit(path.name, total)
+
+            if batch:
+                self.batch_ready.emit(batch)
+            self.completed.emit(total)
+        except Exception as exc:
+            self.failed.emit(str(exc))
