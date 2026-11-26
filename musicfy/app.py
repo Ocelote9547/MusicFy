@@ -332,6 +332,7 @@ class MusicFyWindow(QMainWindow):
         self.current_track: dict[str, Any] | None = None
         self.current_index = -1
         self.online_resolver: OnlineResolver | None = None
+        self.cover_icon_cache: dict[str, QIcon] = {}
         self.nav_buttons: dict[str, QPushButton] = {}
         self.search_timer = QTimer(self)
         self.search_timer.setSingleShot(True)
@@ -1375,32 +1376,47 @@ class MusicFyWindow(QMainWindow):
             ]
 
         self.visible_tracks = tracks
-        self.table.setRowCount(0)
-        for row, track in enumerate(tracks):
-            self.table.insertRow(row)
-            title_item = QTableWidgetItem(str(track["title"]))
-            title_item.setData(Qt.ItemDataRole.UserRole, track["path"])
-            pixmap = self._cover_pixmap(track.get("cover_path"), str(track["title"]))
-            title_item.setIcon(QIcon(pixmap.scaled(
-                38, 38,
-                Qt.AspectRatioMode.KeepAspectRatioByExpanding,
-                Qt.TransformationMode.SmoothTransformation,
-            )))
-            self.table.setItem(row, 0, title_item)
-            self.table.setItem(row, 1, QTableWidgetItem(str(track["artist"])))
-            self.table.setItem(row, 2, QTableWidgetItem(str(track["album"])))
+        self.table.setUpdatesEnabled(False)
+        try:
+            self.table.setRowCount(len(tracks))
+            favorite_icon = QIcon(self._icon_pixmap("star", "#12aee9", 16))
+            for row, track in enumerate(tracks):
+                title = str(track.get("title") or Path(str(track.get("path") or "")).stem)
+                title_item = QTableWidgetItem(title)
+                title_item.setData(Qt.ItemDataRole.UserRole, track["path"])
+                title_item.setIcon(self._cover_icon(track.get("cover_path"), title))
+                self.table.setItem(row, 0, title_item)
+                self.table.setItem(row, 1, QTableWidgetItem(str(track.get("artist") or "Artista desconocido")))
+                self.table.setItem(row, 2, QTableWidgetItem(str(track.get("album") or "Álbum desconocido")))
 
-            duration_item = QTableWidgetItem(self.format_time(track["duration"]))
-            duration_item.setTextAlignment(Qt.AlignmentFlag.AlignCenter)
-            self.table.setItem(row, 3, duration_item)
+                duration_item = QTableWidgetItem(self.format_time(track.get("duration", 0)))
+                duration_item.setTextAlignment(Qt.AlignmentFlag.AlignCenter)
+                self.table.setItem(row, 3, duration_item)
 
-            favorite_item = QTableWidgetItem("")
-            if track["is_favorite"]:
-                favorite_item.setIcon(QIcon(self._icon_pixmap("star", "#13aee8", 16)))
-            favorite_item.setTextAlignment(Qt.AlignmentFlag.AlignCenter)
-            self.table.setItem(row, 4, favorite_item)
+                favorite_item = QTableWidgetItem("")
+                if track.get("is_favorite"):
+                    favorite_item.setIcon(favorite_icon)
+                favorite_item.setTextAlignment(Qt.AlignmentFlag.AlignCenter)
+                self.table.setItem(row, 4, favorite_item)
+        finally:
+            self.table.setUpdatesEnabled(True)
+            self.table.viewport().update()
 
         self.result_count.setText(f"{len(tracks)} canciones")
+
+    def _cover_icon(self, cover_path: str | None, title: str) -> QIcon:
+        cache_key = str(cover_path) if cover_path else f"fallback:{title}"
+        cached = self.cover_icon_cache.get(cache_key)
+        if cached is not None:
+            return cached
+        pixmap = self._cover_pixmap(cover_path, title).scaled(
+            38, 38,
+            Qt.AspectRatioMode.KeepAspectRatioByExpanding,
+            Qt.TransformationMode.SmoothTransformation,
+        )
+        icon = QIcon(pixmap)
+        self.cover_icon_cache[cache_key] = icon
+        return icon
 
     # ------------------------------------------------------------------
     # Playback
