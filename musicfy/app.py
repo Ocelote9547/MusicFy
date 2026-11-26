@@ -120,7 +120,7 @@ class MusicFyWindow(QMainWindow):
         self.current_track: dict[str, Any] | None = None
         self.current_index = -1
         self.online_resolver: OnlineResolver | None = None
-        self.nav_buttons: dict[str, QPushButton] = []
+        self.nav_buttons: dict[str, QPushButton] = {}
 
         self._build_ui()
         self._connect_player()
