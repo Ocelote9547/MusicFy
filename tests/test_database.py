@@ -185,6 +185,8 @@ class MusicDatabaseTests(unittest.TestCase):
                 "artist": "Artist",
                 "album": "Album",
                 "duration": 130,
+                "lyrics": "Embedded lyrics line",
+                "replaygain_track_gain": "-5.0 dB",
             },
         ])
         self.database.mark_played("/music/two.mp3")
@@ -194,7 +196,10 @@ class MusicDatabaseTests(unittest.TestCase):
         most_played = self.database.list_tracks("most_played")
         self.assertEqual(most_played[0]["path"], "/music/two.mp3")
         self.assertEqual(most_played[0]["play_count"], 2)
+        self.assertEqual(most_played[0]["lyrics"], "Embedded lyrics line")
+        self.assertEqual(most_played[0]["replaygain_track_gain"], "-5.0 dB")
         self.assertEqual(len(self.database.list_tracks("recent_added")), 2)
+        self.assertTrue(self.database.list_tracks("recent_added")[0]["date_added"])
 
 
 
