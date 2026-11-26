@@ -662,20 +662,6 @@ class MusicFyWindow(QMainWindow):
         )
         layout.addWidget(hero)
 
-        # Compact library metrics instead of oversized dashboard tiles.
-        stats = QHBoxLayout()
-        stats.setSpacing(12)
-        self.total_stat = self._make_stat_card("CANCIONES", "0", "tracks")
-        self.album_stat = self._make_stat_card("ÁLBUMES", "0", "albums")
-        self.artist_stat = self._make_stat_card("ARTISTAS", "0", "artist")
-        self.favorites_stat = self._make_stat_card("FAVORITOS", "0", "star")
-        for card in (self.total_stat, self.album_stat, self.artist_stat, self.favorites_stat):
-            card.setMinimumHeight(66)
-            card.setMaximumHeight(70)
-            stats.addWidget(card)
-        # Counts remain available to the UI for compact badges, but the home
-        # experience prioritizes listening shelves rather than dashboard metrics.
-
         self.home_recent_section = QWidget()
         recent_header = QHBoxLayout(self.home_recent_section)
         recent_header.setContentsMargins(0, 0, 0, 0)
@@ -1135,11 +1121,6 @@ class MusicFyWindow(QMainWindow):
         favorites = self.database.list_tracks("favorites")
         albums = self.database.list_albums()
         artists = self.database.list_artists()
-
-        self.total_stat.value_label.setText(str(len(all_tracks)))  # type: ignore[attr-defined]
-        self.album_stat.value_label.setText(str(len(albums)))  # type: ignore[attr-defined]
-        self.artist_stat.value_label.setText(str(len(artists)))  # type: ignore[attr-defined]
-        self.favorites_stat.value_label.setText(str(len(favorites)))  # type: ignore[attr-defined]
 
         if self.page_mode == "home":
             self._render_home(albums)
