@@ -59,7 +59,7 @@ class CollectionCard(QFrame):
         super().__init__(parent)
         self.setObjectName("collectionCard")
         self.setCursor(Qt.CursorShape.PointingHandCursor)
-        self.setFixedWidth(186)
+        self.setFixedWidth(198)
 
         layout = QVBoxLayout(self)
         layout.setContentsMargins(10, 10, 10, 12)
@@ -68,27 +68,31 @@ class CollectionCard(QFrame):
         art = QLabel()
         art.setObjectName("collectionCover")
         art.setAlignment(Qt.AlignmentFlag.AlignCenter)
-        art.setFixedSize(164, 164)
+        art.setFixedSize(176, 176)
         art.setPixmap(
             cover.scaled(
-                164,
-                164,
+                176,
+                176,
                 Qt.AspectRatioMode.KeepAspectRatioByExpanding,
                 Qt.TransformationMode.SmoothTransformation,
             )
         )
+        art.setAttribute(Qt.WidgetAttribute.WA_TransparentForMouseEvents)
         layout.addWidget(art, 0, Qt.AlignmentFlag.AlignHCenter)
 
         name = QLabel(title)
         name.setObjectName("collectionTitle")
         name.setWordWrap(True)
         name.setMaximumHeight(38)
+        name.setAttribute(Qt.WidgetAttribute.WA_TransparentForMouseEvents)
+        name.setToolTip(title)
         layout.addWidget(name)
 
         detail = QLabel(subtitle)
         detail.setObjectName("collectionSubtitle")
         detail.setWordWrap(True)
         detail.setMaximumHeight(30)
+        detail.setAttribute(Qt.WidgetAttribute.WA_TransparentForMouseEvents)
         layout.addWidget(detail)
 
         self.kind = kind
@@ -103,6 +107,7 @@ class MusicFyWindow(QMainWindow):
     def __init__(self) -> None:
         super().__init__()
         self.setWindowTitle("MusicFy")
+        self.setObjectName("musicFyWindow")
         self.resize(1360, 880)
         self.setMinimumSize(1000, 700)
 
@@ -273,84 +278,147 @@ class MusicFyWindow(QMainWindow):
         page = QWidget()
         layout = QVBoxLayout(page)
         layout.setContentsMargins(0, 0, 0, 0)
-        layout.setSpacing(15)
+        layout.setSpacing(17)
 
+        # Editorial hero: headline, useful action and custom MusicFy artwork.
         hero = QFrame()
         hero.setObjectName("heroBanner")
+        hero.setMinimumHeight(208)
+        hero.setMaximumHeight(220)
         hero_layout = QHBoxLayout(hero)
-        hero_layout.setContentsMargins(25, 22, 20, 22)
+        hero_layout.setContentsMargins(30, 22, 24, 22)
+        hero_layout.setSpacing(12)
 
         copy = QVBoxLayout()
-        hero_kicker = QLabel("MUSICFY LIBRARY")
+        copy.setSpacing(8)
+        hero_kicker = QLabel("TU COLECCIÓN · TU BIBLIOTECA")
         hero_kicker.setObjectName("heroKicker")
         copy.addWidget(hero_kicker)
 
-        hero_title = QLabel("Tu música,\na tu manera.")
+        hero_title = QLabel("Tu música,\\na tu manera.")
         hero_title.setObjectName("heroTitle")
         copy.addWidget(hero_title)
 
         hero_text = QLabel(
-            "Organiza tus álbumes, vuelve a tus favoritos y disfruta de tu colección local."
+            "Todos tus álbumes, artistas y canciones en un mismo lugar."
         )
         hero_text.setObjectName("heroText")
         hero_text.setWordWrap(True)
-        hero_text.setMaximumWidth(465)
+        hero_text.setMaximumWidth(440)
         copy.addWidget(hero_text)
 
-        explore = QPushButton("Explorar canciones  →")
+        explore = QPushButton("Explorar mi biblioteca  →")
         explore.setObjectName("heroButton")
         explore.setCursor(Qt.CursorShape.PointingHandCursor)
         explore.clicked.connect(lambda: self.show_page("tracks"))
         copy.addWidget(explore, 0, Qt.AlignmentFlag.AlignLeft)
+        copy.addStretch(1)
         hero_layout.addLayout(copy, 1)
 
-        visual = QFrame()
-        visual.setObjectName("heroArtwork")
-        visual.setFixedSize(170, 170)
-        visual_label = QLabel("♫")
-        visual_label.setObjectName("heroArtworkGlyph")
-        visual_label.setAlignment(Qt.AlignmentFlag.AlignCenter)
-        visual_layout = QVBoxLayout(visual)
-        visual_layout.addWidget(visual_label)
-        hero_layout.addWidget(visual, 0, Qt.AlignmentFlag.AlignRight | Qt.AlignmentFlag.AlignVCenter)
+        self.hero_artwork = QLabel()
+        self.hero_artwork.setObjectName("heroArtwork")
+        self.hero_artwork.setFixedSize(205, 150)
+        self.hero_artwork.setAlignment(Qt.AlignmentFlag.AlignCenter)
+        self.hero_artwork.setPixmap(self._hero_artwork())
+        self.hero_artwork.setAttribute(Qt.WidgetAttribute.WA_TransparentForMouseEvents)
+        hero_layout.addWidget(
+            self.hero_artwork,
+            0,
+            Qt.AlignmentFlag.AlignRight | Qt.AlignmentFlag.AlignVCenter,
+        )
         layout.addWidget(hero)
 
+        # Compact library metrics instead of oversized dashboard tiles.
         stats = QHBoxLayout()
-        stats.setSpacing(10)
+        stats.setSpacing(12)
         self.total_stat = self._make_stat_card("CANCIONES", "0", "♫")
         self.album_stat = self._make_stat_card("ÁLBUMES", "0", "▦")
         self.artist_stat = self._make_stat_card("ARTISTAS", "0", "◉")
         self.favorites_stat = self._make_stat_card("FAVORITOS", "0", "★")
         for card in (self.total_stat, self.album_stat, self.artist_stat, self.favorites_stat):
+            card.setMinimumHeight(76)
+            card.setMaximumHeight(82)
             stats.addWidget(card)
         layout.addLayout(stats)
 
-        section_header = QHBoxLayout()
+        self.home_section_header = QWidget()
+        section_header = QHBoxLayout(self.home_section_header)
+        section_header.setContentsMargins(0, 0, 0, 0)
         section_title = QLabel("Álbumes de tu biblioteca")
         section_title.setObjectName("sectionTitle")
         section_header.addWidget(section_title)
         section_header.addStretch(1)
-        all_albums = QPushButton("Ver todos  →")
+        all_albums = QPushButton("Ver toda la colección  →")
         all_albums.setObjectName("textButton")
+        all_albums.setCursor(Qt.CursorShape.PointingHandCursor)
         all_albums.clicked.connect(lambda: self.show_page("albums"))
         section_header.addWidget(all_albums)
-        layout.addLayout(section_header)
+        layout.addWidget(self.home_section_header)
 
+        # Horizontal album rail, like a modern streaming library.
+        self.home_album_scroll = QScrollArea()
+        self.home_album_scroll.setObjectName("homeAlbumScroll")
+        self.home_album_scroll.setWidgetResizable(True)
+        self.home_album_scroll.setFrameShape(QFrame.Shape.NoFrame)
+        self.home_album_scroll.setHorizontalScrollBarPolicy(
+            Qt.ScrollBarPolicy.ScrollBarAsNeeded
+        )
+        self.home_album_scroll.setVerticalScrollBarPolicy(
+            Qt.ScrollBarPolicy.ScrollBarAlwaysOff
+        )
         self.home_album_area = QWidget()
-        self.home_album_grid = QGridLayout(self.home_album_area)
-        self.home_album_grid.setContentsMargins(0, 0, 0, 0)
-        self.home_album_grid.setHorizontalSpacing(12)
-        self.home_album_grid.setVerticalSpacing(12)
-        layout.addWidget(self.home_album_area, 1)
+        self.home_album_row = QHBoxLayout(self.home_album_area)
+        self.home_album_row.setContentsMargins(2, 2, 10, 10)
+        self.home_album_row.setSpacing(14)
+        self.home_album_row.setAlignment(Qt.AlignmentFlag.AlignLeft)
+        self.home_album_scroll.setWidget(self.home_album_area)
+        layout.addWidget(self.home_album_scroll, 1)
+
+        # Proper empty state, with real next actions.
+        self.home_empty_card = QFrame()
+        self.home_empty_card.setObjectName("emptyStateCard")
+        self.home_empty_card.setMinimumHeight(176)
+        empty_layout = QHBoxLayout(self.home_empty_card)
+        empty_layout.setContentsMargins(24, 22, 24, 22)
+        empty_layout.setSpacing(19)
+
+        self.home_empty_icon = QLabel("♫")
+        self.home_empty_icon.setObjectName("emptyStateIcon")
+        self.home_empty_icon.setFixedSize(64, 64)
+        self.home_empty_icon.setAlignment(Qt.AlignmentFlag.AlignCenter)
+        empty_layout.addWidget(self.home_empty_icon)
+
+        empty_copy = QVBoxLayout()
+        empty_copy.setSpacing(6)
+        self.home_empty_title = QLabel("Tu biblioteca empieza aquí")
+        self.home_empty_title.setObjectName("emptyStateTitle")
+        empty_copy.addWidget(self.home_empty_title)
 
         self.home_empty = QLabel(
-            "Tu biblioteca está esperando a que añadas música.\n"
-            "Importa archivos o una carpeta para empezar."
+            "Añade tus archivos o selecciona una carpeta para reunir toda tu música."
         )
         self.home_empty.setObjectName("emptyState")
-        self.home_empty.setAlignment(Qt.AlignmentFlag.AlignCenter)
         self.home_empty.setWordWrap(True)
-        layout.addWidget(self.home_empty)
+        self.home_empty.setMaximumWidth(490)
+        empty_copy.addWidget(self.home_empty)
+        empty_copy.addStretch(1)
+        empty_layout.addLayout(empty_copy, 1)
+
+        empty_actions = QVBoxLayout()
+        empty_actions.setSpacing(8)
+        empty_files_button = QPushButton("+  Añadir canciones")
+        empty_files_button.setObjectName("primaryButton")
+        empty_files_button.setCursor(Qt.CursorShape.PointingHandCursor)
+        empty_files_button.clicked.connect(self.add_audio_files)
+        empty_actions.addWidget(empty_files_button)
+
+        empty_folder_button = QPushButton("Elegir carpeta")
+        empty_folder_button.setObjectName("secondaryButton")
+        empty_folder_button.setCursor(Qt.CursorShape.PointingHandCursor)
+        empty_folder_button.clicked.connect(self.add_music_folder)
+        empty_actions.addWidget(empty_folder_button)
+        empty_layout.addLayout(empty_actions)
+        layout.addWidget(self.home_empty_card, 1)
         return page
 
     def _build_tracks_page(self) -> QWidget:
@@ -598,24 +666,40 @@ class MusicFyWindow(QMainWindow):
                 if query in str(item["album"]).casefold()
                 or query in str(item["artist"]).casefold()
             ]
-        self._clear_grid(self.home_album_grid)
 
-        for index, record in enumerate(records[:8]):
+        self._clear_layout(self.home_album_row)
+        for record in records[:12]:
             card = self._make_collection_card("album", record)
             card.clicked.connect(partial(self.show_collection_detail, "album", record))
-            self.home_album_grid.addWidget(card, index // 3, index % 3)
+            self.home_album_row.addWidget(card)
+        self.home_album_row.addStretch(1)
 
-        has_tracks = bool(self.database.list_tracks("all"))
-        self.home_empty.setVisible(not has_tracks)
-        self.home_album_area.setVisible(bool(records))
-        if has_tracks and not records:
-            self.home_empty.setText("No hay álbumes que coincidan con tu búsqueda.")
-            self.home_empty.setVisible(True)
-        elif not has_tracks:
+        has_music = bool(self.database.list_tracks("all"))
+        has_albums = bool(records)
+        show_empty = not has_albums
+
+        self.home_section_header.setVisible(has_albums)
+        self.home_album_scroll.setVisible(has_albums)
+        self.home_empty_card.setVisible(show_empty)
+
+        if not has_music:
+            self.home_empty_icon.setText("♫")
+            self.home_empty_title.setText("Tu biblioteca empieza aquí")
             self.home_empty.setText(
-                "Tu biblioteca está esperando a que añadas música.\n"
-                "Importa archivos o una carpeta para empezar."
+                "Añade tus archivos o selecciona una carpeta para reunir toda tu música."
             )
+        elif not has_albums:
+            self.home_empty_icon.setText("⌕")
+            self.home_empty_title.setText("No encontramos esos álbumes")
+            self.home_empty.setText(
+                "Prueba con otro título o artista, o borra la búsqueda para volver a tu colección."
+            )
+
+        # In the empty state, make the action card the main content instead of
+        # leaving a large, unexplained blank region below the statistics.
+        if hasattr(self, "home_empty_card"):
+            for child in self.home_empty_card.findChildren(QPushButton):
+                child.setVisible(not has_music)
 
     def _render_collections(self) -> None:
         self._clear_grid(self.collection_grid)
@@ -648,7 +732,7 @@ class MusicFyWindow(QMainWindow):
         for index, record in enumerate(records):
             card = self._make_collection_card(kind, record)
             card.clicked.connect(partial(self.show_collection_detail, kind, record))
-            self.collection_grid.addWidget(card, index // 3, index % 3)
+            self.collection_grid.addWidget(card, index // 4, index % 4)
 
         if not records:
             empty = QLabel(
@@ -658,7 +742,7 @@ class MusicFyWindow(QMainWindow):
             empty.setObjectName("emptyState")
             empty.setAlignment(Qt.AlignmentFlag.AlignCenter)
             empty.setMinimumHeight(180)
-            self.collection_grid.addWidget(empty, 0, 0, 1, 3)
+            self.collection_grid.addWidget(empty, 0, 0, 1, 4)
 
     def _make_collection_card(
         self,
@@ -678,12 +762,65 @@ class MusicFyWindow(QMainWindow):
         return CollectionCard(title, subtitle, cover, kind)
 
     @staticmethod
-    def _clear_grid(grid: QGridLayout) -> None:
-        while grid.count():
-            item = grid.takeAt(0)
+    def _clear_layout(layout: Any) -> None:
+        while layout.count():
+            item = layout.takeAt(0)
             widget = item.widget()
             if widget is not None:
                 widget.deleteLater()
+
+    @staticmethod
+    def _clear_grid(grid: QGridLayout) -> None:
+        MusicFyWindow._clear_layout(grid)
+
+    @staticmethod
+    def _hero_artwork() -> QPixmap:
+        pixmap = QPixmap(420, 260)
+        pixmap.fill(QColor("#14243c"))
+        painter = QPainter(pixmap)
+        painter.setRenderHint(QPainter.RenderHint.Antialiasing, True)
+
+        background = QLinearGradient(0, 0, 420, 260)
+        background.setColorAt(0, QColor("#293e67"))
+        background.setColorAt(0.55, QColor("#172b49"))
+        background.setColorAt(1, QColor("#0d1728"))
+        painter.setPen(Qt.PenStyle.NoPen)
+        painter.setBrush(background)
+        painter.drawRoundedRect(0, 0, 420, 260, 28, 28)
+
+        # Vinyl disc with subtle grooves and a lavender highlight.
+        painter.setBrush(QColor("#0a111d"))
+        painter.setPen(QColor(196, 215, 255, 42))
+        painter.drawEllipse(218, 28, 206, 206)
+        for inset in (12, 23, 35, 47, 61):
+            painter.setBrush(Qt.BrushStyle.NoBrush)
+            painter.setPen(QColor(185, 205, 250, 25))
+            painter.drawEllipse(218 + inset, 28 + inset, 206 - inset * 2, 206 - inset * 2)
+        painter.setBrush(QColor("#8eafff"))
+        painter.setPen(QColor(220, 230, 255, 110))
+        painter.drawEllipse(297, 107, 48, 48)
+        painter.setBrush(QColor("#17243a"))
+        painter.setPen(Qt.PenStyle.NoPen)
+        painter.drawEllipse(314, 124, 14, 14)
+
+        # Overlapping sleeve gives the composition a real album-art cue.
+        sleeve = QLinearGradient(40, 20, 195, 230)
+        sleeve.setColorAt(0, QColor("#b7caff"))
+        sleeve.setColorAt(0.48, QColor("#617fca"))
+        sleeve.setColorAt(1, QColor("#253b68"))
+        painter.setBrush(sleeve)
+        painter.setPen(QColor(235, 242, 255, 135))
+        painter.drawRoundedRect(48, 32, 150, 190, 12, 12)
+        painter.setPen(QColor(255, 255, 255, 35))
+        painter.setBrush(QColor(255, 255, 255, 22))
+        painter.drawEllipse(115, 10, 160, 160)
+        painter.setPen(QColor("#f4f7ff"))
+        painter.setFont(QFont("Segoe UI", 54, QFont.Weight.Bold))
+        painter.drawText(76, 142, "M")
+        painter.setFont(QFont("Segoe UI", 10, QFont.Weight.Bold))
+        painter.drawText(78, 173, "MUSICFY")
+        painter.end()
+        return pixmap
 
     def _cover_pixmap(self, cover_path: str | None, seed: str) -> QPixmap:
         if cover_path:
