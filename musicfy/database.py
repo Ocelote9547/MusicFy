@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import sqlite3
+from datetime import datetime
 from pathlib import Path
 from typing import Any
 
@@ -105,6 +106,7 @@ class MusicDatabase:
                 "cover_path": track.get("cover_path"),
                 "lyrics": str(track.get("lyrics") or ""),
                 "replaygain_track_gain": str(track.get("replaygain_track_gain") or ""),
+                "date_added": datetime.now().strftime("%Y-%m-%d %H:%M:%S"),
             }
             for track in tracks
             if track.get("path")
@@ -116,11 +118,11 @@ class MusicDatabase:
                 """
                 INSERT INTO tracks(
                     path, title, artist, album, genre, duration, cover_path,
-                    lyrics, replaygain_track_gain
+                    lyrics, replaygain_track_gain, date_added
                 )
                 VALUES(
                     :path, :title, :artist, :album, :genre, :duration, :cover_path,
-                    :lyrics, :replaygain_track_gain
+                    :lyrics, :replaygain_track_gain, :date_added
                 )
                 ON CONFLICT(path) DO UPDATE SET
                     title=excluded.title,
