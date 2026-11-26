@@ -462,6 +462,7 @@ class MusicFyWindow(QMainWindow):
         self.new_playlist_button = IconButton("plus", "Nueva playlist")
         self.new_playlist_button.setObjectName("sidebarAction")
         self.new_playlist_button.setMinimumWidth(0)
+        self.new_playlist_button.setSizePolicy(QSizePolicy.Policy.Expanding, QSizePolicy.Policy.Fixed)
         self.new_playlist_button.set_label_color("#c9d4e1")
         self.new_playlist_button.clicked.connect(self.create_playlist)
         side_layout.addWidget(self.new_playlist_button)
@@ -469,6 +470,7 @@ class MusicFyWindow(QMainWindow):
         self.import_playlist_button = IconButton("import", "Importar M3U")
         self.import_playlist_button.setObjectName("sidebarAction")
         self.import_playlist_button.setMinimumWidth(0)
+        self.import_playlist_button.setSizePolicy(QSizePolicy.Policy.Expanding, QSizePolicy.Policy.Fixed)
         self.import_playlist_button.set_label_color("#c9d4e1")
         self.import_playlist_button.clicked.connect(self.import_m3u_playlist)
         side_layout.addWidget(self.import_playlist_button)
@@ -1772,7 +1774,7 @@ class MusicFyWindow(QMainWindow):
     def closeEvent(self, event: Any) -> None:
         if self.import_worker and self.import_worker.isRunning():
             self.import_worker.requestInterruption()
-            self.import_worker.wait(5000)
+            self.import_worker.wait()
         if self.online_resolver and self.online_resolver.isRunning():
             self.online_resolver.quit()
             self.online_resolver.wait(1500)
