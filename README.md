@@ -1,15 +1,25 @@
 # MusicFy
 
-Reproductor musical de escritorio desarrollado con **Python + PyQt6**. Su diseño toma como referencia el lenguaje visual AURORA de N3mesis Launcher: fondo azul noche, paneles oscuros, acentos azul lavanda y superficies limpias.
+Reproductor musical de escritorio desarrollado con **Python + PyQt6**, siguiendo la identidad visual AURORA de N3mesis Launcher.
 
-## Primera versión
+## Biblioteca premium (0.2.0)
 
-- Biblioteca local indexada en SQLite.
-- Importación de canciones sueltas o carpetas completas.
-- Metadatos básicos con Mutagen.
-- Reproducción, pausa, anterior/siguiente, posición y volumen con Qt Multimedia.
-- Búsqueda dentro de la biblioteca, favoritos e historial.
+- Inicio con resumen de la colección y álbumes recientes de la biblioteca.
+- Vistas de canciones, álbumes, artistas y géneros.
+- Fichas visuales de álbumes con sus carátulas.
+- Extracción de portadas incrustadas en los archivos y búsqueda de imágenes de carpeta (`cover.jpg`, `folder.jpg`, `front.jpg`).
+- Caché local de carátulas en `~/.musicfy/covers` para evitar volver a extraerlas en cada arranque.
+- Favoritos, historial, búsqueda global, menú contextual y reproducción desde las fichas.
+- Migración automática de SQLite para conservar las bibliotecas creadas con versiones anteriores.
+
+## Reproducción y formatos
+
+- Reproducción local con Qt Multimedia.
+- Metadatos de audio mediante Mutagen.
+- Importación de archivos sueltos o carpetas completas.
 - Reproducción online de URLs compatibles mediante yt-dlp (sin descarga local).
+
+La compatibilidad final de MP3, FLAC, WAV, OGG, Opus, M4A, AAC, AIFF y WMA depende de los códecs y backends multimedia instalados en el sistema.
 
 ## Requisitos
 
@@ -42,21 +52,25 @@ python main.py
 
 ## Uso
 
-1. Abre **Añadir canciones** o **Añadir carpeta** para importar tu música.
-2. Selecciona una fila y haz doble clic para reproducirla.
-3. Usa el menú contextual para marcar favoritos o retirar entradas de la biblioteca.
-4. Pulsa **URL online** para abrir un recurso compatible. La fuente debe permitir expresamente su reproducción externa y debes tener derecho a acceder al contenido.
+1. Abre **Añadir música** o **Añadir carpeta** para importar archivos.
+2. En **Álbumes**, selecciona una portada para ver sus canciones.
+3. En **Artistas** y **Géneros**, abre una ficha para filtrar la colección.
+4. Haz doble clic en una canción para reproducirla.
+5. Usa el menú contextual para añadir o quitar favoritos, o retirar una pista de MusicFy. El archivo original nunca se borra.
+
+La base de datos se guarda en `~/.musicfy/library.sqlite3`. Las carátulas extraídas se guardan en `~/.musicfy/covers`. Los archivos de audio originales no se modifican.
 
 ## Uso responsable de fuentes online
 
 MusicFy no elimina DRM, no evita controles de acceso y no debe utilizarse para copiar o reproducir contenido sin autorización. Utiliza URLs de material propio, de dominio público, con licencias compatibles o para el que tengas permiso. Respeta siempre las condiciones de la plataforma y los derechos de los titulares.
 
-La reproducción de formatos y URLs depende de los códecs y backends multimedia disponibles en el sistema. Algunas fuentes online pueden no ser compatibles con Qt Multimedia.
+Algunas fuentes online pueden no ofrecer un flujo reproducible en Qt Multimedia.
 
 ## Estructura
 
 ```
 main.py
+requirements.txt
 musicfy/
   __init__.py
   app.py
@@ -64,13 +78,13 @@ musicfy/
   library.py
   online.py
   styles.qss
-requirements.txt
+tests/
+  test_database.py
 ```
 
-## Próximas mejoras
+## Comprobaciones
 
-- Portadas y extracción de carátulas.
-- Listas de reproducción editables.
-- Descargas únicamente desde fuentes con permiso explícito y licencias verificables.
-- Ecualizador, letras y visualizador.
-- Empaquetado para Windows y Linux.
+```bash
+python -m compileall -q main.py musicfy
+python -m unittest discover -s tests -v
+```
