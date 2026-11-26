@@ -1,15 +1,15 @@
-# MusicFy
+# N3mesisFy
 
 Reproductor musical de escritorio desarrollado con **Python + PyQt6**, siguiendo la identidad visual AURORA de N3mesis Launcher.
 
-## Interfaz AURORA (0.3.2)
+## Interfaz AURORA (0.4.0)
 
 - Tema inspirado en N3mesis Launcher: negro grafito, paneles oscuros, bordes finos y acento cian.
 - Navegación horizontal superior en cápsula, inspirada en la estructura de N3mesis Launcher.\n- Iconografía vectorial pintada con Qt, consistente y sin depender de emojis ni de fuentes de símbolos instaladas en Windows.
 - Controles de navegación, importación y reproducción con iconos vectoriales.
 - Botón de reproducción, pausa, anterior y siguiente con iconos escalables.
 
-- Inicio editorial con ilustración MusicFy, métricas compactas, carrusel horizontal de álbumes y un estado vacío con acciones directas.
+- Inicio editorial con ilustración N3mesisFy, métricas compactas, carrusel horizontal de álbumes y un estado vacío con acciones directas.
 - Vistas de canciones, álbumes, artistas y géneros.
 - Fichas visuales de álbumes con sus carátulas.\n- Navegación rediseñada y superficies transparentes para evitar bloques de fondo en etiquetas.
 - Extracción de portadas incrustadas en los archivos y búsqueda de imágenes de carpeta (`cover.jpg`, `folder.jpg`, `front.jpg`).
@@ -61,13 +61,13 @@ python main.py
 2. En **Álbumes**, selecciona una portada para ver sus canciones.
 3. En **Artistas** y **Géneros**, abre una ficha para filtrar la colección.
 4. Haz doble clic en una canción para reproducirla.
-5. Usa el menú contextual para añadir o quitar favoritos, o retirar una pista de MusicFy. El archivo original nunca se borra.
+5. Usa el menú contextual para añadir o quitar favoritos, o retirar una pista de N3mesisFy. El archivo original nunca se borra.
 
 La base de datos se guarda en `~/.musicfy/library.sqlite3`. Las carátulas extraídas se guardan en `~/.musicfy/covers`. Los archivos de audio originales no se modifican.
 
 ## Uso responsable de fuentes online
 
-MusicFy no elimina DRM, no evita controles de acceso y no debe utilizarse para copiar o reproducir contenido sin autorización. Utiliza URLs de material propio, de dominio público, con licencias compatibles o para el que tengas permiso. Respeta siempre las condiciones de la plataforma y los derechos de los titulares.
+N3mesisFy no elimina DRM, no evita controles de acceso y no debe utilizarse para copiar o reproducir contenido sin autorización. Utiliza URLs de material propio, de dominio público, con licencias compatibles o para el que tengas permiso. Respeta siempre las condiciones de la plataforma y los derechos de los titulares.
 
 Algunas fuentes online pueden no ofrecer un flujo reproducible en Qt Multimedia.
 
