@@ -1315,9 +1315,9 @@ class MusicFyWindow(QMainWindow):
             playlist_id = self.database.create_playlist(parsed["name"])
             self.database.save_playlist_tracks(playlist_id, tracks)
             self.refresh_content()
-            existing = [item["path"] for item in tracks if Path(item["path"]).is_file()]
-            if existing:
-                self._start_library_import(paths=existing)
+            track_paths = [item["path"] for item in tracks]
+            if track_paths:
+                self._start_library_import(paths=track_paths)
             else:
                 self.statusBar().showMessage(
                     f'Playlist "{parsed["name"]}" importada con {len(tracks)} entradas.', 7000
