@@ -631,3 +631,107 @@ QPushButton#cardPlayButton QLabel {
     color: #07131b;
     background: transparent;
 }
+
+
+/* N3mesisFy 0.5 — focused listening experience */
+QFrame#heroBanner {
+    background: qlineargradient(x1:0,y1:0,x2:1,y2:1,
+        stop:0 #162b37, stop:.52 #101a22, stop:1 #0c1117);
+    border: 1px solid #2b414d;
+    border-radius: 20px;
+}
+QLabel#heroTitle {
+    color: #f5f8fb;
+    font-size: 34px;
+    font-weight: 900;
+    letter-spacing: -1.4px;
+}
+QLabel#heroText {
+    color: #c0cbd5;
+    font-size: 12px;
+    font-weight: 600;
+}
+QLabel#heroArtwork {
+    background: #101f28;
+    border: 1px solid #2a4b5a;
+    border-radius: 16px;
+}
+QPushButton#heroButton {
+    color: #06131b;
+    background: #12b8ee;
+    border: 1px solid #12b8ee;
+    border-radius: 10px;
+    padding: 0 18px;
+    min-height: 42px;
+    font-size: 11px;
+    font-weight: 850;
+}
+QPushButton#heroButton QLabel {
+    color: #06131b;
+    background: transparent;
+    font-weight: 850;
+}
+QPushButton#heroButton:hover { background: #67d6f7; }
+QScrollArea#homePageScroll,
+QScrollArea#homePageScroll QWidget#homePageContent {
+    background: transparent;
+    border: none;
+}
+QFrame#playerBar {
+    background: qlineargradient(x1:0,y1:0,x2:1,y2:0,
+        stop:0 #121820, stop:.52 #0e1319, stop:1 #10161d);
+    border: 1px solid #2b343d;
+    border-radius: 16px;
+}
+QLabel#nowTitle { font-size: 12px; font-weight: 850; }
+QLabel#nowPlayingCover {
+    background: #101820;
+    border: 1px solid #2e4654;
+    border-radius: 18px;
+}
+QDialog#nowPlayingDialog,
+QDialog#queueDialog {
+    background: #080b0f;
+    color: #f3f6f8;
+}
+QLabel#nowPlayingTitle {
+    color: #f5f7fa;
+    font-size: 36px;
+    font-weight: 900;
+    letter-spacing: -1.4px;
+}
+QLabel#nowPlayingArtist {
+    color: #b0bdc8;
+    font-size: 17px;
+    font-weight: 600;
+}
+QLabel#nowPlayingDialog QLabel#eyebrow {
+    color: #18b9ed;
+}
+QDialog#nowPlayingDialog QPushButton#primaryButton {
+    min-height: 42px;
+    padding: 0 18px;
+}
+QDialog#nowPlayingDialog QPushButton#secondaryButton {
+    min-height: 42px;
+    padding: 0 18px;
+}
+QListWidget#queueList::item {
+    min-height: 36px;
+    padding: 11px 12px;
+    border-radius: 7px;
+}
+QListWidget#queueList::item:selected {
+    background: rgba(18,184,238,.20);
+    border: 1px solid rgba(18,184,238,.35);
+}
+QListWidget#queueList::item:hover {
+    background: #19222b;
+}
+QPushButton#controlButton:hover {
+    background: rgba(18,184,238,.12);
+    border-color: rgba(18,184,238,.24);
+}
+QPushButton#controlButton#fullPlayerButton {
+    color: #c6d3df;
+}
