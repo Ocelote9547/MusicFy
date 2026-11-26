@@ -347,7 +347,7 @@ class MusicDatabase:
                 COALESCE(NULLIF(t.artist, ''), NULLIF(pt.artist, ''), 'Artista desconocido') AS artist,
                 COALESCE(NULLIF(t.album, ''), 'Lista de reproducción') AS album,
                 COALESCE(t.genre, 'Sin género') AS genre,
-                COALESCE(t.duration, pt.duration, 0) AS duration,
+                COALESCE(NULLIF(t.duration, 0), pt.duration, 0) AS duration,
                 t.cover_path AS cover_path,
                 COALESCE(t.is_favorite, 0) AS is_favorite,
                 t.last_played AS last_played,
