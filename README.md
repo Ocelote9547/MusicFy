@@ -1,95 +1,80 @@
 # N3mesisFy
 
-Reproductor musical de escritorio desarrollado con **Python + PyQt6**, siguiendo la identidad visual AURORA de N3mesis Launcher.
+Reproductor musical de escritorio para Windows y Linux, desarrollado con **Python + PyQt6**. Su identidad visual parte de N3mesis Launcher: superficies oscuras, bordes finos e iluminación cian.
 
-## Interfaz AURORA (0.4.0)
+## Versión 0.4.0
 
-- Tema inspirado en N3mesis Launcher: negro grafito, paneles oscuros, bordes finos y acento cian.
-- Navegación horizontal superior en cápsula, inspirada en la estructura de N3mesis Launcher.\n- Iconografía vectorial pintada con Qt, consistente y sin depender de emojis ni de fuentes de símbolos instaladas en Windows.
-- Controles de navegación, importación y reproducción con iconos vectoriales.
-- Botón de reproducción, pausa, anterior y siguiente con iconos escalables.
+### Biblioteca
+- Biblioteca local con canciones, álbumes, artistas, géneros, favoritos e historial.
+- Metadatos y carátulas incrustadas mediante Mutagen.
+- Caché de portadas en `~/.musicfy/covers`.
+- Búsqueda con retardo breve para no reconstruir la vista en cada pulsación.
+- Importación de archivos y carpetas mediante un hilo de trabajo; el análisis no bloquea la interfaz.
+- Inserción de la biblioteca en lotes SQLite y actualización de tabla con repintado suspendido.
 
-- Inicio editorial con ilustración N3mesisFy, métricas compactas, carrusel horizontal de álbumes y un estado vacío con acciones directas.
-- Vistas de canciones, álbumes, artistas y géneros.
-- Fichas visuales de álbumes con sus carátulas.\n- Navegación rediseñada y superficies transparentes para evitar bloques de fondo en etiquetas.
-- Extracción de portadas incrustadas en los archivos y búsqueda de imágenes de carpeta (`cover.jpg`, `folder.jpg`, `front.jpg`).
-- Caché local de carátulas en `~/.musicfy/covers` para evitar volver a extraerlas en cada arranque.
-- Favoritos, historial, búsqueda global, menú contextual y reproducción desde las fichas.
-- Migración automática de SQLite para conservar las bibliotecas creadas con versiones anteriores.
-
-## Reproducción y formatos
-
+### Reproductor
 - Reproducción local con Qt Multimedia.
-- Metadatos de audio mediante Mutagen.
-- Importación de archivos sueltos o carpetas completas.
-- Reproducción online de URLs compatibles mediante yt-dlp (sin descarga local).
+- Anterior, siguiente, reproducir y pausar.
+- Barra de progreso y volumen.
+- Aleatorio, repetición desactivada / repetir cola / repetir una pista.
+- Vista de la cola de reproducción.
+- Carátula y metadatos de la pista actual.
 
-La compatibilidad final de MP3, FLAC, WAV, OGG, Opus, M4A, AAC, AIFF y WMA depende de los códecs y backends multimedia instalados en el sistema.
+### Playlists M3U
+- Crear y eliminar playlists desde la aplicación.
+- Importar archivos `.m3u` y `.m3u8`.
+- Exportar playlists en formato M3U8 UTF-8.
+- Conserva el orden, título, artista y duración EXTINF.
+- Resuelve rutas relativas respecto al archivo M3U.
+- Mantiene entradas a archivos locales que no estén disponibles en ese momento.
+- Las URLs de streaming se omiten en el importador local actual.
+
+Las canciones añadidas desde una playlist se vinculan a la biblioteca cuando existen localmente; sus metadatos se leen en segundo plano.
 
 ## Requisitos
-
 - Python 3.10 o posterior.
 - PyQt6 con Qt Multimedia.
 - Mutagen.
-- yt-dlp para la función online.
+- yt-dlp para resolver las URLs online compatibles.
 
-## Instalación
-
-```bash
-python -m venv .venv
-```
-
-Windows:
+## Instalación en Windows
 
 ```powershell
+git clone https://github.com/Ocelote9547/MusicFy.git
+cd MusicFy
+python -m venv .venv
 .venv\Scripts\Activate.ps1
 python -m pip install -r requirements.txt
 python main.py
 ```
 
-Linux / macOS:
+Para actualizar una copia ya clonada:
+
+```powershell
+git pull origin main
+python main.py
+```
+
+## Linux
 
 ```bash
+git clone https://github.com/Ocelote9547/MusicFy.git
+cd MusicFy
+python -m venv .venv
 source .venv/bin/activate
 python -m pip install -r requirements.txt
 python main.py
 ```
 
-## Uso
-
-1. Abre **Añadir música** o **Añadir carpeta** para importar archivos.
-2. En **Álbumes**, selecciona una portada para ver sus canciones.
-3. En **Artistas** y **Géneros**, abre una ficha para filtrar la colección.
-4. Haz doble clic en una canción para reproducirla.
-5. Usa el menú contextual para añadir o quitar favoritos, o retirar una pista de N3mesisFy. El archivo original nunca se borra.
-
-La base de datos se guarda en `~/.musicfy/library.sqlite3`. Las carátulas extraídas se guardan en `~/.musicfy/covers`. Los archivos de audio originales no se modifican.
+## Datos locales
+La base de datos se almacena en `~/.musicfy/library.sqlite3`. Las carátulas en caché se guardan en `~/.musicfy/covers`. Las playlists se conservan en SQLite; los archivos M3U importados y exportados siguen siendo archivos independientes.
 
 ## Uso responsable de fuentes online
-
-N3mesisFy no elimina DRM, no evita controles de acceso y no debe utilizarse para copiar o reproducir contenido sin autorización. Utiliza URLs de material propio, de dominio público, con licencias compatibles o para el que tengas permiso. Respeta siempre las condiciones de la plataforma y los derechos de los titulares.
-
-Algunas fuentes online pueden no ofrecer un flujo reproducible en Qt Multimedia.
-
-## Estructura
-
-```
-main.py
-requirements.txt
-musicfy/
-  __init__.py
-  app.py
-  database.py
-  library.py
-  online.py
-  styles.qss
-tests/
-  test_database.py
-```
+Utiliza únicamente contenido propio, de dominio público, con licencia compatible o para el que tengas permiso, y cuando la fuente permita expresamente la reproducción externa. N3mesisFy no elimina DRM ni descarga automáticamente audio protegido.
 
 ## Comprobaciones
 
 ```bash
-python -m compileall -q main.py musicfy
+python -m compileall -q main.py musicfy tests
 python -m unittest discover -s tests -v
 ```
