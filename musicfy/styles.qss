@@ -609,3 +609,25 @@ QLabel#collectionSubtitle {
     color: #8d9aa8;
     font-size: 10px;
 }
+
+
+QFrame#collectionArtwork {
+    background: #10151a;
+    border: none;
+    border-radius: 11px;
+}
+QPushButton#cardPlayButton {
+    color: #07131b;
+    background: #12b8ee;
+    border: 1px solid rgba(255,255,255,.42);
+    border-radius: 20px;
+    padding: 0;
+}
+QPushButton#cardPlayButton:hover {
+    background: #65d5f7;
+    border-color: #d9f6ff;
+}
+QPushButton#cardPlayButton QLabel {
+    color: #07131b;
+    background: transparent;
+}
