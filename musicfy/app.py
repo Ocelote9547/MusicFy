@@ -1113,6 +1113,286 @@ class MusicFyWindow(QMainWindow):
         )
         self.refresh_content()
 
+    def _render_home(self, albums: list[dict[str, Any]]) -> None:
+        query = self.search_box.text().strip().casefold()
+        records = albums
+        if query:
+            records = [
+                item for item in albums
+                if query in str(item["album"]).casefold()
+                or query in str(item["artist"]).casefold()
+            ]
+
+        # Recently played albums form the first personalized shelf.
+        history_tracks = self.database.list_tracks("history")
+        album_lookup = {
+            (str(item.get("album") or ""), str(item.get("artist") or "")): item
+            for item in albums
+        }
+        recent_records: list[dict[str, Any]] = []
+        recent_seen: set[tuple[str, str]] = set()
+        for track in history_tracks:
+            key = (
+                str(track.get("album") or ""),
+                str(track.get("artist") or ""),
+            )
+            if key in recent_seen or not key[0]:
+                continue
+            recent_seen.add(key)
+            record = album_lookup.get(key)
+            if record is not None:
+                recent_records.append(record)
+            if len(recent_records) >= 12:
+                break
+
+        self._clear_layout(self.home_recent_row)
+        for record in recent_records:
+            card = self._make_collection_card("album", record)
+            card.clicked.connect(
+                partial(self.show_collection_detail, "album", record)
+            )
+            card.play_requested.connect(
+                partial(self.play_collection_record, "album", record)
+            )
+            self.home_recent_row.addWidget(card)
+        self.home_recent_row.addStretch(1)
+
+        self._clear_layout(self.home_album_row)
+        for record in records[:12]:
+            card = self._make_collection_card("album", record)
+            card.clicked.connect(
+                partial(self.show_collection_detail, "album", record)
+            )
+            card.play_requested.connect(
+                partial(self.play_collection_record, "album", record)
+            )
+            self.home_album_row.addWidget(card)
+        self.home_album_row.addStretch(1)
+
+        playlists = self.database.list_playlists()
+        self._clear_layout(self.home_playlist_row)
+        for record in playlists[:12]:
+            card = self._make_collection_card("playlist", record)
+            card.clicked.connect(partial(self.show_playlist_detail, record))
+            card.play_requested.connect(
+                partial(self.play_playlist_record, record)
+            )
+            self.home_playlist_row.addWidget(card)
+        self.home_playlist_row.addStretch(1)
+
+        has_music = bool(self.database.list_tracks("all"))
+        has_albums = bool(records)
+        self.featured_album = records[0] if records else None
+
+        if self.featured_album:
+            featured = self.featured_album
+            title = str(featured.get("album") or "Álbum destacado")
+            artist = str(featured.get("artist") or "Artista desconocido")
+            cover = self._cover_pixmap(featured.get("cover_path"), title)
+            self.hero_artwork.setPixmap(
+                cover.scaled(
+                    188,
+                    188,
+                    Qt.AspectRatioMode.KeepAspectRatioByExpanding,
+                    Qt.TransformationMode.SmoothTransformation,
+                )
+            )
+            self.hero_artwork.setToolTip(f"{title} · {artist}")
+            self.hero_text_label.setText(f"{title}  ·  {artist}")
+            self.hero_action_button.set_label_text("Reproducir álbum")
+            self.hero_action_button.set_icon("play")
+            self.hero_action_button.setEnabled(True)
+        else:
+            self.hero_artwork.setPixmap(
+                self._hero_artwork().scaled(
+                    188,
+                    188,
+                    Qt.AspectRatioMode.KeepAspectRatioByExpanding,
+                    Qt.TransformationMode.SmoothTransformation,
+                )
+            )
+            self.hero_artwork.setToolTip("N3mesisFy")
+            self.hero_text_label.setText(
+                "Añade tus archivos para llenar tu espacio musical."
+                if not has_music
+                else "Prueba otra búsqueda para encontrar tus álbumes."
+            )
+            self.hero_action_button.set_label_text("Explorar canciones")
+            self.hero_action_button.set_icon("arrow-right")
+            self.hero_action_button.setEnabled(has_music)
+
+        self.home_recent_section.setVisible(bool(recent_records))
+        self.home_recent_scroll.setVisible(bool(recent_records))
+        self.home_section_header.setVisible(has_albums)
+        self.home_album_scroll.setVisible(has_albums)
+        self.home_playlist_section.setVisible(bool(playlists))
+        self.home_playlist_scroll.setVisible(bool(playlists))
+        self.home_empty_card.setVisible(not has_albums)
+
+        if not has_music:
+            self.home_empty_icon.set_icon("albums")
+            self.home_empty_title.setText("Tu biblioteca empieza aquí")
+            self.home_empty.setText(
+                "Importa tus canciones y N3mesisFy organizará automáticamente "
+                "tus álbumes, artistas y carátulas."
+            )
+        elif not has_albums:
+            self.home_empty_icon.set_icon("search")
+            self.home_empty_title.setText("No encontramos esos álbumes")
+            self.home_empty.setText(
+                "Prueba con otro título o artista, o borra la búsqueda "
+                "para volver a tu colección."
+            )
+
+        for child in self.home_empty_card.findChildren(QPushButton):
+            child.setVisible(not has_music)
+
+        self.home_page_scroll.verticalScrollBar().setValue(0)
+
+    def _render_collections(self) -> None:
+        self._clear_grid(self.collection_grid)
+        query = self.search_box.text().strip().casefold()
+
+        if self.page_mode == "albums":
+            kind = "album"
+            records = self.database.list_albums()
+            records = [
+                item for item in records
+                if not query
+                or query in str(item["album"]).casefold()
+                or query in str(item["artist"]).casefold()
+            ]
+        elif self.page_mode == "artists":
+            kind = "artist"
+            records = self.database.list_artists()
+            records = [
+                item for item in records
+                if not query or query in str(item["artist"]).casefold()
+            ]
+        elif self.page_mode == "genres":
+            kind = "genre"
+            records = self.database.list_genres()
+            records = [
+                item for item in records
+                if not query or query in str(item["genre"]).casefold()
+            ]
+        else:
+            kind = "playlist"
+            records = self.database.list_playlists()
+            records = [
+                item for item in records
+                if not query or query in str(item["name"]).casefold()
+            ]
+
+        for index, record in enumerate(records):
+            card = self._make_collection_card(kind, record)
+            if kind == "playlist":
+                card.clicked.connect(partial(self.show_playlist_detail, record))
+                card.play_requested.connect(
+                    partial(self.play_playlist_record, record)
+                )
+            else:
+                card.clicked.connect(
+                    partial(self.show_collection_detail, kind, record)
+                )
+                card.play_requested.connect(
+                    partial(self.play_collection_record, kind, record)
+                )
+            self.collection_grid.addWidget(card, index // 4, index % 4)
+
+        if not records:
+            message = (
+                "No hay playlists que coincidan con la búsqueda."
+                if query and kind == "playlist"
+                else "Todavía no tienes playlists. Crea una o importa un archivo M3U."
+                if kind == "playlist"
+                else "No hay resultados para esta búsqueda."
+                if query
+                else "Todavía no hay contenido. Añade música para llenar tu biblioteca."
+            )
+            empty = QLabel(message)
+            empty.setObjectName("emptyState")
+            empty.setAlignment(Qt.AlignmentFlag.AlignCenter)
+            empty.setMinimumHeight(180)
+            self.collection_grid.addWidget(empty, 0, 0, 1, 4)
+
+    def _make_collection_card(
+        self,
+        kind: str,
+        record: dict[str, Any],
+    ) -> CollectionCard:
+        if kind == "album":
+            title = str(record.get("album") or "Álbum desconocido")
+            subtitle = (
+                f'{record.get("artist", "Artista desconocido")}  ·  '
+                f'{record.get("track_count", 0)} canciones'
+            )
+        elif kind == "artist":
+            title = str(record.get("artist") or "Artista desconocido")
+            subtitle = (
+                f'{record.get("album_count", 0)} álbumes  ·  '
+                f'{record.get("track_count", 0)} canciones'
+            )
+        elif kind == "playlist":
+            title = str(record.get("name") or "Playlist")
+            subtitle = f'{record.get("track_count", 0)} canciones  ·  M3U compatible'
+        else:
+            title = str(record.get("genre") or "Sin género")
+            subtitle = f'{record.get("track_count", 0)} canciones'
+        cover = self._cover_pixmap(record.get("cover_path"), title)
+        return CollectionCard(title, subtitle, cover, kind)
+
+    def play_collection_record(
+        self,
+        kind: str,
+        record: dict[str, Any],
+    ) -> None:
+        value = (
+            record.get("album") if kind == "album"
+            else record.get("artist") if kind == "artist"
+            else record.get("genre")
+        )
+        tracks = self.database.tracks_for_collection(
+            kind,
+            str(value or ""),
+            str(record.get("artist") or "") if kind == "album" else None,
+        )
+        self._start_queue(tracks)
+
+    def play_playlist_record(self, record: dict[str, Any]) -> None:
+        self._start_queue(
+            self.database.get_playlist_tracks(int(record["id"]))
+        )
+
+    def _start_queue(self, tracks: list[dict[str, Any]]) -> None:
+        if not tracks:
+            self.statusBar().showMessage(
+                "No hay canciones disponibles para reproducir.", 4000
+            )
+            return
+        self.queue = list(tracks)
+        self.current_index = 0
+        if self.shuffle_enabled:
+            self._build_shuffle_order(0)
+        self.play_track(self.queue[0])
+
+    def play_featured_album(self) -> None:
+        if not self.featured_album:
+            self.show_page("tracks")
+            return
+        record = self.featured_album
+        tracks = self.database.tracks_for_collection(
+            "album",
+            str(record.get("album") or ""),
+            str(record.get("artist") or ""),
+        )
+        if not tracks:
+            self.statusBar().showMessage(
+                "Este álbum no contiene canciones disponibles.", 4000
+            )
+            return
+        self._start_queue(tracks)
+
     def return_from_detail(self) -> None:
         self.show_page(self.last_collection_mode)
 
