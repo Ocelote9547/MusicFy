@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import hashlib
 import random
+import re
 from functools import partial
 from pathlib import Path
 from typing import Any
@@ -17,6 +18,8 @@ from PyQt6.QtGui import (
     QPainterPath,
     QPen,
     QPixmap,
+    QKeySequence,
+    QShortcut,
 )
 from PyQt6.QtMultimedia import QAudioOutput, QMediaPlayer
 try:
@@ -375,7 +378,8 @@ class MusicFyWindow(QMainWindow):
         self.database = MusicDatabase()
         self.player = QMediaPlayer(self)
         self.audio_output = QAudioOutput(self)
-        self.audio_output.setVolume(0.72)
+        self.master_volume = 0.72
+        self.audio_output.setVolume(self.master_volume)
         self.player.setAudioOutput(self.audio_output)
         self.audio_buffer_output = None
         if QAudioBufferOutput is not None:
@@ -392,7 +396,10 @@ class MusicFyWindow(QMainWindow):
         self.import_worker: LibraryImportWorker | None = None
         self.imported_count = 0
         self.shuffle_enabled = False
+        self.shuffle_order: list[int] = []
+        self.shuffle_position = -1
         self.repeat_mode = "off"
+        self.replaygain_enabled = False
         self.last_collection_mode = "albums"
         self.active_collection: dict[str, Any] | None = None
         self.visible_tracks: list[dict[str, Any]] = []
@@ -406,8 +413,12 @@ class MusicFyWindow(QMainWindow):
         self.search_timer.setSingleShot(True)
         self.search_timer.setInterval(180)
         self.search_timer.timeout.connect(self.refresh_content)
+        self.sleep_timer = QTimer(self)
+        self.sleep_timer.setSingleShot(True)
+        self.sleep_timer.timeout.connect(self._sleep_timer_expired)
 
         self._build_ui()
+        self._install_shortcuts()
         self._connect_player()
         self._load_styles()
         self.refresh_content()
@@ -522,7 +533,9 @@ class MusicFyWindow(QMainWindow):
         ])
         self._add_nav_group(side_layout, "TU MÚSICA", [
             ("star", "Favoritos", "favorites"),
-            ("history", "Recientes", "history"),
+            ("history", "Escuchado recientemente", "history"),
+            ("plus", "Añadidas recientemente", "recent_added"),
+            ("star", "Más reproducidas", "most_played"),
             ("playlist", "Playlists", "playlists"),
         ])
 
@@ -1017,6 +1030,8 @@ class MusicFyWindow(QMainWindow):
             "genres": ("Géneros", "Encuentra el sonido que te apetece.", 2),
             "favorites": ("Favoritos", "Las canciones que has guardado.", 1),
             "history": ("Escuchado recientemente", "Vuelve a tus últimas reproducciones.", 1),
+            "recent_added": ("Añadidas recientemente", "Lo último que has incorporado a tu biblioteca.", 1),
+            "most_played": ("Más reproducidas", "Tus canciones con más reproducciones.", 1),
             "playlists": ("Mis playlists", "Crea, importa y organiza tus listas M3U.", 2),
         }
         title, subtitle, stack_index = page_details.get(mode, page_details["home"])
@@ -1102,6 +1117,10 @@ class MusicFyWindow(QMainWindow):
             self._render_tracks(favorites)
         elif self.page_mode == "history":
             self._render_tracks(self.database.list_tracks("history"))
+        elif self.page_mode == "recent_added":
+            self._render_tracks(self.database.list_tracks("recent_added"))
+        elif self.page_mode == "most_played":
+            self._render_tracks(self.database.list_tracks("most_played"))
         else:
             self._render_tracks(all_tracks)
 
