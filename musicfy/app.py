@@ -29,7 +29,6 @@ from PyQt6.QtWidgets import (
     QMessageBox,
     QPushButton,
     QScrollArea,
-    QSizePolicy,
     QSlider,
     QStackedWidget,
     QTableWidget,
@@ -242,8 +241,7 @@ class MusicFyWindow(QMainWindow):
 
         side_layout.addStretch(1)
 
-        local_note = QLabel("TU MÚSICA
-SIEMPRE CONTIGO")
+        local_note = QLabel("TU MÚSICA\nSIEMPRE CONTIGO")
         local_note.setObjectName("sidebar_note")
         side_layout.addWidget(local_note)
 
