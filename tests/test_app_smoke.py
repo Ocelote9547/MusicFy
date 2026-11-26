@@ -9,8 +9,10 @@ from unittest.mock import patch
 os.environ.setdefault("QT_QPA_PLATFORM", "offscreen")
 
 from PyQt6.QtWidgets import QApplication
+from PyQt6.QtGui import QPainter, QPixmap
+from PyQt6.QtCore import Qt
 
-from musicfy.app import MusicFyWindow
+from musicfy.app import MusicFyWindow, draw_vector_icon
 
 
 class MusicFyWindowSmokeTests(unittest.TestCase):
@@ -44,6 +46,31 @@ class MusicFyWindowSmokeTests(unittest.TestCase):
         self.assertEqual(self.window.page_mode, "albums")
         self.assertEqual(self.window.content_stack.currentIndex(), 2)
         self.assertTrue(self.window.nav_buttons["albums"].isChecked())
+
+
+    def test_vector_icon_set_paints_without_system_glyph_fonts(self) -> None:
+        icon_names = (
+            "home", "tracks", "albums", "artist", "genres", "star",
+            "history", "plus", "folder", "globe", "arrow-right",
+            "arrow-left", "search", "music-note", "play", "pause",
+            "previous", "next",
+        )
+        for icon_name in icon_names:
+            with self.subTest(icon=icon_name):
+                pixmap = QPixmap(32, 32)
+                pixmap.fill(Qt.GlobalColor.transparent)
+                painter = QPainter(pixmap)
+                draw_vector_icon(painter, icon_name, "#12aee9", 24)
+                painter.end()
+                image = pixmap.toImage()
+                painted_pixels = sum(
+                    1
+                    for y in range(image.height())
+                    for x in range(image.width())
+                    if image.pixelColor(x, y).alpha() > 0
+                )
+                self.assertGreater(painted_pixels, 0)
+
 
 
 if __name__ == "__main__":
