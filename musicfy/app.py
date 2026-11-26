@@ -1931,7 +1931,7 @@ class MusicFyWindow(QMainWindow):
             self.shuffle_order = indices
             self.shuffle_position = -1
 
-    def _advance_shuffle(self, offset: int) -> bool:
+    def _advance_shuffle(self, offset: int, wrap: bool = True) -> bool:
         if not self.queue:
             return False
         if not self.shuffle_order:
@@ -1943,6 +1943,8 @@ class MusicFyWindow(QMainWindow):
         if next_position < 0:
             return False
         if next_position >= len(self.shuffle_order):
+            if not wrap:
+                return False
             current = self.current_index
             candidates = [index for index in range(len(self.queue)) if index != current]
             random.shuffle(candidates)
@@ -2049,6 +2051,8 @@ class MusicFyWindow(QMainWindow):
         self.current_index = (
             order.index(previous_index) if previous_index in order else -1
         )
+        if self.shuffle_enabled:
+            self._build_shuffle_order(self.current_index)
         for row in range(queue_list.count()):
             item = queue_list.item(row)
             track = self.queue[row]
@@ -2074,6 +2078,8 @@ class MusicFyWindow(QMainWindow):
                 (index for index, track in enumerate(self.queue) if track is current_track),
                 -1,
             )
+        if self.shuffle_enabled and self.queue:
+            self._build_shuffle_order(self.current_index)
         for index in range(queue_list.count()):
             item = queue_list.item(index)
             item.setData(Qt.ItemDataRole.UserRole, index)
@@ -2097,8 +2103,10 @@ class MusicFyWindow(QMainWindow):
             self.player.play()
             return
         if self.shuffle_enabled and len(self.queue) > 1:
-            if self._advance_shuffle(1):
+            if self._advance_shuffle(1, wrap=self.repeat_mode == "all"):
                 self.play_track(self.queue[self.current_index])
+            else:
+                self.player.stop()
             return
         if self.current_index + 1 < len(self.queue):
             self.current_index += 1
