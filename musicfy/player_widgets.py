@@ -28,7 +28,17 @@ def audio_buffer_levels(buffer: Any, band_count: int = 24) -> list[float]:
     if frames < 32 or audio_format.sampleRate() <= 0:
         return [0.0] * band_count
 
-    raw = bytes(buffer.data())
+    byte_count = int(buffer.byteCount())
+    payload = buffer.constData()
+    try:
+        if hasattr(payload, "asstring"):
+            raw = payload.asstring(byte_count)
+        else:
+            raw = bytes(payload)
+    except (TypeError, ValueError, BufferError):
+        return [0.0] * band_count
+    if len(raw) < byte_count:
+        return [0.0] * band_count
     sample_format = audio_format.sampleFormat()
     format_name = getattr(sample_format, "name", str(sample_format)).lower()
 
