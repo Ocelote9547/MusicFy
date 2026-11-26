@@ -35,9 +35,11 @@ class MusicFyWindowSmokeTests(unittest.TestCase):
     def test_main_window_builds_all_library_sections(self) -> None:
         self.assertEqual(
             set(self.window.nav_buttons),
-            {"home", "tracks", "albums", "artists", "genres", "favorites", "history"},
+            {"home", "tracks", "albums", "artists", "genres", "favorites", "history", "playlists"},
         )
         self.assertEqual(self.window.page_mode, "home")
+        self.assertEqual(self.window.windowTitle(), "N3mesisFy")
+        self.assertTrue(self.window.nav_buttons["home"].isChecked())
         self.assertTrue(self.window.nav_buttons["home"].isChecked())
         self.assertFalse(self.window.home_empty_card.isHidden())
         self.assertTrue(self.window.home_album_scroll.isHidden())
@@ -54,7 +56,7 @@ class MusicFyWindowSmokeTests(unittest.TestCase):
             "home", "tracks", "albums", "artist", "genres", "star",
             "history", "plus", "folder", "globe", "arrow-right",
             "arrow-left", "search", "music-note", "play", "pause",
-            "previous", "next",
+            "previous", "next", "playlist", "shuffle", "repeat", "import", "export", "trash",
         )
         for icon_name in icon_names:
             with self.subTest(icon=icon_name):
