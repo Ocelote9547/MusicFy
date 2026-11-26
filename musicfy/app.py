@@ -295,7 +295,7 @@ class MusicFyWindow(QMainWindow):
         hero_kicker.setObjectName("heroKicker")
         copy.addWidget(hero_kicker)
 
-        hero_title = QLabel("Tu música,\\na tu manera.")
+        hero_title = QLabel("Tu música,\na tu manera.")
         hero_title.setObjectName("heroTitle")
         copy.addWidget(hero_title)
 
