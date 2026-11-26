@@ -6,7 +6,7 @@ from typing import Any
 
 
 class MusicDatabase:
-    """SQLite-backed library with safe, additive schema migrations."""
+    """SQLite-backed music library and playlist store."""
 
     def __init__(self) -> None:
         data_dir = Path.home() / ".musicfy"
@@ -14,6 +14,7 @@ class MusicDatabase:
         self.db_path = data_dir / "library.sqlite3"
         self.connection = sqlite3.connect(self.db_path)
         self.connection.row_factory = sqlite3.Row
+        self.connection.execute("PRAGMA foreign_keys = ON")
         self._create_schema()
 
     def _create_schema(self) -> None:
@@ -34,7 +35,7 @@ class MusicDatabase:
                 """
             )
 
-            # Keep existing MusicFy databases usable without deleting user data.
+            # Additive migrations preserve libraries from earlier MusicFy builds.
             columns = {
                 row["name"]
                 for row in self.connection.execute("PRAGMA table_info(tracks)")
@@ -47,18 +48,57 @@ class MusicDatabase:
                 if column not in columns:
                     self.connection.execute(statement)
 
-    def save_track(self, track: dict[str, Any]) -> None:
-        values = {
-            "path": str(track["path"]),
-            "title": str(track.get("title") or Path(track["path"]).stem),
-            "artist": str(track.get("artist") or "Artista desconocido"),
-            "album": str(track.get("album") or "Álbum desconocido"),
-            "genre": str(track.get("genre") or "Sin género"),
-            "duration": float(track.get("duration") or 0),
-            "cover_path": track.get("cover_path"),
-        }
-        with self.connection:
             self.connection.execute(
+                """
+                CREATE TABLE IF NOT EXISTS playlists (
+                    id INTEGER PRIMARY KEY AUTOINCREMENT,
+                    name TEXT NOT NULL,
+                    created_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP,
+                    updated_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP
+                )
+                """
+            )
+            self.connection.execute(
+                """
+                CREATE TABLE IF NOT EXISTS playlist_tracks (
+                    playlist_id INTEGER NOT NULL,
+                    position INTEGER NOT NULL,
+                    path TEXT NOT NULL,
+                    title TEXT NOT NULL DEFAULT '',
+                    artist TEXT NOT NULL DEFAULT '',
+                    duration REAL NOT NULL DEFAULT 0,
+                    PRIMARY KEY (playlist_id, position),
+                    FOREIGN KEY (playlist_id) REFERENCES playlists(id) ON DELETE CASCADE
+                )
+                """
+            )
+            self.connection.execute(
+                "CREATE INDEX IF NOT EXISTS idx_playlist_tracks_path ON playlist_tracks(path)"
+            )
+
+    def save_track(self, track: dict[str, Any]) -> None:
+        self.save_tracks([track])
+
+    def save_tracks(self, tracks: list[dict[str, Any]]) -> None:
+        if not tracks:
+            return
+        values = [
+            {
+                "path": str(track["path"]),
+                "title": str(track.get("title") or Path(track["path"]).stem),
+                "artist": str(track.get("artist") or "Artista desconocido"),
+                "album": str(track.get("album") or "Álbum desconocido"),
+                "genre": str(track.get("genre") or "Sin género"),
+                "duration": float(track.get("duration") or 0),
+                "cover_path": track.get("cover_path"),
+            }
+            for track in tracks
+            if track.get("path")
+        ]
+        if not values:
+            return
+        with self.connection:
+            self.connection.executemany(
                 """
                 INSERT INTO tracks(
                     path, title, artist, album, genre, duration, cover_path
@@ -93,8 +133,7 @@ class MusicDatabase:
                 "SELECT * FROM tracks "
                 "ORDER BY artist COLLATE NOCASE, album COLLATE NOCASE, title COLLATE NOCASE"
             )
-        rows = self.connection.execute(query).fetchall()
-        return [dict(row) for row in rows]
+        return [dict(row) for row in self.connection.execute(query).fetchall()]
 
     def list_albums(self) -> list[dict[str, Any]]:
         rows = self.connection.execute(
@@ -179,6 +218,166 @@ class MusicDatabase:
             return []
         return [dict(row) for row in rows]
 
+    # ------------------------------------------------------------------
+    # Playlists
+    # ------------------------------------------------------------------
+    def create_playlist(self, name: str) -> int:
+        clean_name = name.strip()
+        if not clean_name:
+            raise ValueError("El nombre de la playlist no puede estar vacío.")
+        with self.connection:
+            cursor = self.connection.execute(
+                "INSERT INTO playlists(name) VALUES(?)",
+                (clean_name,),
+            )
+        return int(cursor.lastrowid)
+
+    def get_playlist(self, playlist_id: int) -> dict[str, Any] | None:
+        row = self.connection.execute(
+            """
+            SELECT p.id, p.name, p.created_at, p.updated_at,
+                   COUNT(pt.position) AS track_count
+            FROM playlists p
+            LEFT JOIN playlist_tracks pt ON pt.playlist_id=p.id
+            WHERE p.id=?
+            GROUP BY p.id
+            """,
+            (playlist_id,),
+        ).fetchone()
+        return dict(row) if row else None
+
+    def list_playlists(self) -> list[dict[str, Any]]:
+        rows = self.connection.execute(
+            """
+            SELECT p.id, p.name, p.created_at, p.updated_at,
+                   COUNT(pt.position) AS track_count
+            FROM playlists p
+            LEFT JOIN playlist_tracks pt ON pt.playlist_id=p.id
+            GROUP BY p.id
+            ORDER BY p.updated_at DESC, p.name COLLATE NOCASE
+            """
+        ).fetchall()
+        return [dict(row) for row in rows]
+
+    def rename_playlist(self, playlist_id: int, name: str) -> None:
+        clean_name = name.strip()
+        if not clean_name:
+            raise ValueError("El nombre de la playlist no puede estar vacío.")
+        with self.connection:
+            self.connection.execute(
+                "UPDATE playlists SET name=?, updated_at=CURRENT_TIMESTAMP WHERE id=?",
+                (clean_name, playlist_id),
+            )
+
+    def delete_playlist(self, playlist_id: int) -> None:
+        with self.connection:
+            self.connection.execute("DELETE FROM playlists WHERE id=?", (playlist_id,))
+
+    def save_playlist_tracks(
+        self,
+        playlist_id: int,
+        tracks: list[dict[str, Any]],
+    ) -> None:
+        values = [
+            (
+                playlist_id,
+                position,
+                str(track.get("path") or ""),
+                str(track.get("title") or Path(str(track.get("path") or "Pista")).stem),
+                str(track.get("artist") or "Artista desconocido"),
+                float(track.get("duration") or 0),
+            )
+            for position, track in enumerate(tracks)
+            if track.get("path")
+        ]
+        with self.connection:
+            self.connection.execute(
+                "DELETE FROM playlist_tracks WHERE playlist_id=?",
+                (playlist_id,),
+            )
+            self.connection.executemany(
+                """
+                INSERT INTO playlist_tracks(
+                    playlist_id, position, path, title, artist, duration
+                ) VALUES(?, ?, ?, ?, ?, ?)
+                """,
+                values,
+            )
+            self.connection.execute(
+                "UPDATE playlists SET updated_at=CURRENT_TIMESTAMP WHERE id=?",
+                (playlist_id,),
+            )
+
+    def add_to_playlist(self, playlist_id: int, track: dict[str, Any]) -> None:
+        row = self.connection.execute(
+            "SELECT COALESCE(MAX(position), -1) + 1 AS next_position "
+            "FROM playlist_tracks WHERE playlist_id=?",
+            (playlist_id,),
+        ).fetchone()
+        position = int(row["next_position"])
+        values = (
+            playlist_id,
+            position,
+            str(track["path"]),
+            str(track.get("title") or Path(track["path"]).stem),
+            str(track.get("artist") or "Artista desconocido"),
+            float(track.get("duration") or 0),
+        )
+        with self.connection:
+            self.connection.execute(
+                """
+                INSERT INTO playlist_tracks(
+                    playlist_id, position, path, title, artist, duration
+                ) VALUES(?, ?, ?, ?, ?, ?)
+                """,
+                values,
+            )
+            self.connection.execute(
+                "UPDATE playlists SET updated_at=CURRENT_TIMESTAMP WHERE id=?",
+                (playlist_id,),
+            )
+
+    def get_playlist_tracks(self, playlist_id: int) -> list[dict[str, Any]]:
+        rows = self.connection.execute(
+            """
+            SELECT
+                pt.position AS playlist_position,
+                pt.path AS path,
+                COALESCE(NULLIF(t.title, ''), NULLIF(pt.title, ''), 'Pista desconocida') AS title,
+                COALESCE(NULLIF(t.artist, ''), NULLIF(pt.artist, ''), 'Artista desconocido') AS artist,
+                COALESCE(NULLIF(t.album, ''), 'Lista de reproducción') AS album,
+                COALESCE(t.genre, 'Sin género') AS genre,
+                COALESCE(t.duration, pt.duration, 0) AS duration,
+                t.cover_path AS cover_path,
+                COALESCE(t.is_favorite, 0) AS is_favorite,
+                t.last_played AS last_played,
+                CASE WHEN t.path IS NULL THEN 0 ELSE 1 END AS in_library
+            FROM playlist_tracks pt
+            LEFT JOIN tracks t ON t.path=pt.path
+            WHERE pt.playlist_id=?
+            ORDER BY pt.position
+            """,
+            (playlist_id,),
+        ).fetchall()
+        return [dict(row) for row in rows]
+
+    def remove_from_playlist(self, playlist_id: int, position: int) -> None:
+        current = self.get_playlist_tracks(playlist_id)
+        remaining = [
+            {
+                "path": track["path"],
+                "title": track["title"],
+                "artist": track["artist"],
+                "duration": track["duration"],
+            }
+            for track in current
+            if int(track["playlist_position"]) != position
+        ]
+        self.save_playlist_tracks(playlist_id, remaining)
+
+    # ------------------------------------------------------------------
+    # Track state
+    # ------------------------------------------------------------------
     def set_favorite(self, path: str, favorite: bool) -> None:
         with self.connection:
             self.connection.execute(
