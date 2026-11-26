@@ -348,17 +348,17 @@ class MusicFyWindow(QMainWindow):
     # ------------------------------------------------------------------
     def _build_ui(self) -> None:
         root = QWidget()
-        root_layout = QVBoxLayout(root)
-        root_layout.setContentsMargins(20, 14, 20, 14)
-        root_layout.setSpacing(13)
+        root_layout = QHBoxLayout(root)
+        root_layout.setContentsMargins(16, 14, 16, 14)
+        root_layout.setSpacing(15)
 
-        root_layout.addWidget(self._build_top_bar())
-        root_layout.addWidget(self._build_top_navigation())
+        sidebar = self._build_sidebar()
+        root_layout.addWidget(sidebar)
 
         content = QWidget()
         content_layout = QVBoxLayout(content)
-        content_layout.setContentsMargins(2, 2, 2, 0)
-        content_layout.setSpacing(15)
+        content_layout.setContentsMargins(3, 2, 2, 0)
+        content_layout.setSpacing(13)
 
         header = QHBoxLayout()
         header_copy = QVBoxLayout()
@@ -378,6 +378,7 @@ class MusicFyWindow(QMainWindow):
 
         self.online_button = IconButton("globe", "URL online")
         self.online_button.setObjectName("secondaryButton")
+        self.online_button.setMinimumWidth(128)
         self.online_button.clicked.connect(self.open_online_url)
         header.addWidget(self.online_button)
         content_layout.addLayout(header)
@@ -387,20 +388,22 @@ class MusicFyWindow(QMainWindow):
         self.search_box.setObjectName("searchBox")
         self.search_box.setPlaceholderText("Buscar canciones, álbumes, artistas o géneros...")
         self.search_box.setClearButtonEnabled(True)
-        self.search_box.textChanged.connect(self.refresh_content)
+        self.search_box.textChanged.connect(lambda _text: self.search_timer.start())
         action_row.addWidget(self.search_box, 1)
 
-        add_files_button = IconButton("plus", "Añadir música")
-        add_files_button.set_icon_color("#06131b")
-        add_files_button.set_label_color("#06131b")
-        add_files_button.setObjectName("primaryButton")
-        add_files_button.clicked.connect(self.add_audio_files)
-        action_row.addWidget(add_files_button)
+        self.add_files_button = IconButton("plus", "Añadir música")
+        self.add_files_button.setObjectName("primaryButton")
+        self.add_files_button.setMinimumWidth(138)
+        self.add_files_button.set_icon_color("#06131b")
+        self.add_files_button.set_label_color("#06131b")
+        self.add_files_button.clicked.connect(self.add_audio_files)
+        action_row.addWidget(self.add_files_button)
 
-        add_folder_button = IconButton("folder", "Añadir carpeta")
-        add_folder_button.setObjectName("secondaryButton")
-        add_folder_button.clicked.connect(self.add_music_folder)
-        action_row.addWidget(add_folder_button)
+        self.add_folder_button = IconButton("folder", "Añadir carpeta")
+        self.add_folder_button.setObjectName("secondaryButton")
+        self.add_folder_button.setMinimumWidth(142)
+        self.add_folder_button.clicked.connect(self.add_music_folder)
+        action_row.addWidget(self.add_folder_button)
         content_layout.addLayout(action_row)
 
         self.content_stack = QStackedWidget()
@@ -412,78 +415,93 @@ class MusicFyWindow(QMainWindow):
         content_layout.addWidget(self._build_player_bar())
         root_layout.addWidget(content, 1)
         self.setCentralWidget(root)
-        self.statusBar().showMessage("Listo para descubrir tu música.")
+        self.statusBar().showMessage("N3mesisFy · Listo para reproducir.")
 
-    def _build_top_bar(self) -> QWidget:
-        bar = QWidget()
-        bar.setObjectName("topBar")
-        layout = QHBoxLayout(bar)
-        layout.setContentsMargins(3, 0, 3, 0)
-        layout.setSpacing(10)
+    def _build_sidebar(self) -> QFrame:
+        sidebar = QFrame()
+        sidebar.setObjectName("sidebar")
+        sidebar.setFixedWidth(228)
+        side_layout = QVBoxLayout(sidebar)
+        side_layout.setContentsMargins(15, 19, 15, 16)
+        side_layout.setSpacing(6)
 
-        mark = IconGlyph("music-note", "#ffffff", 20)
-        mark.setObjectName("brandMark")
-        mark.setFixedSize(32, 32)
-        layout.addWidget(mark)
+        brand_row = QHBoxLayout()
+        brand_mark = IconGlyph("music-note", "#ffffff", 20)
+        brand_mark.setObjectName("brandMark")
+        brand_mark.setFixedSize(36, 36)
+        brand_row.addWidget(brand_mark)
 
-        brand = QLabel("MUSICFY")
-        brand.setObjectName("topBrand")
-        layout.addWidget(brand)
+        brand = QLabel("N3mesisFy")
+        brand.setObjectName("brand")
+        brand_row.addWidget(brand)
+        brand_row.addStretch(1)
+        side_layout.addLayout(brand_row)
 
-        separator = QLabel("/")
-        separator.setObjectName("topBrandSeparator")
-        layout.addWidget(separator)
+        caption = QLabel("YOUR MUSIC. YOUR SPACE.")
+        caption.setObjectName("eyebrow")
+        side_layout.addWidget(caption)
+        side_layout.addSpacing(22)
 
-        caption = QLabel("N3MESIS STUDIO")
-        caption.setObjectName("topBrandCaption")
-        layout.addWidget(caption)
+        self._add_nav_group(side_layout, "DESCUBRIR", [
+            ("home", "Inicio", "home"),
+        ])
+        self._add_nav_group(side_layout, "TU BIBLIOTECA", [
+            ("tracks", "Canciones", "tracks"),
+            ("albums", "Álbumes", "albums"),
+            ("artist", "Artistas", "artists"),
+            ("genres", "Géneros", "genres"),
+        ])
+        self._add_nav_group(side_layout, "TU MÚSICA", [
+            ("star", "Favoritos", "favorites"),
+            ("history", "Escuchado recientemente", "history"),
+            ("playlist", "Playlists", "playlists"),
+        ])
 
-        layout.addStretch(1)
+        side_layout.addSpacing(2)
+        self.new_playlist_button = IconButton("plus", "Nueva playlist")
+        self.new_playlist_button.setObjectName("sidebarAction")
+        self.new_playlist_button.setMinimumWidth(0)
+        self.new_playlist_button.set_label_color("#c9d4e1")
+        self.new_playlist_button.clicked.connect(self.create_playlist)
+        side_layout.addWidget(self.new_playlist_button)
 
-        version = QLabel("v0.3.1")
-        version.setObjectName("versionPill")
-        version.setAlignment(Qt.AlignmentFlag.AlignCenter)
-        layout.addWidget(version)
-        return bar
+        self.import_playlist_button = IconButton("import", "Importar M3U")
+        self.import_playlist_button.setObjectName("sidebarAction")
+        self.import_playlist_button.setMinimumWidth(0)
+        self.import_playlist_button.set_label_color("#c9d4e1")
+        self.import_playlist_button.clicked.connect(self.import_m3u_playlist)
+        side_layout.addWidget(self.import_playlist_button)
 
-    def _build_top_navigation(self) -> QFrame:
-        bar = QFrame()
-        bar.setObjectName("topNavigation")
-        bar.setFixedHeight(62)
-        layout = QHBoxLayout(bar)
-        layout.setContentsMargins(12, 8, 12, 8)
-        layout.setSpacing(7)
-        layout.addStretch(1)
+        side_layout.addStretch(1)
+        footer = QLabel("N3MESIS STUDIO\nMUSIC PLAYER  ·  0.4.0")
+        footer.setObjectName("sidebar_note")
+        side_layout.addWidget(footer)
+        return sidebar
 
-        items = [
-            ("home", "INICIO", "home"),
-            ("tracks", "CANCIONES", "tracks"),
-            ("albums", "ÁLBUMES", "albums"),
-            ("artist", "ARTISTAS", "artists"),
-            ("genres", "GÉNEROS", "genres"),
-            ("star", "FAVORITOS", "favorites"),
-            ("history", "HISTORIAL", "history"),
-        ]
+    def _add_nav_group(
+        self,
+        parent_layout: QVBoxLayout,
+        heading: str,
+        items: list[tuple[str, str, str]],
+    ) -> None:
+        group_title = QLabel(heading)
+        group_title.setObjectName("navGroupLabel")
+        parent_layout.addWidget(group_title)
         for icon_name, title, mode in items:
-            button = IconButton(icon_name, title, icon_size=16)
-            button.setObjectName("topNavButton")
+            button = IconButton(icon_name, title, icon_size=17)
+            button.setObjectName("navButton")
             button.setCheckable(True)
-            button.setChecked(mode == "home")
-            button.setMinimumHeight(42)
-            button.setMinimumWidth(102)
-            button.set_icon_color("#101820" if mode == "home" else "#b1bdca")
-            button.label_widget.setStyleSheet(
-                "color: #101820; font-weight: 800;" if mode == "home"
-                else "color: #b1bdca; font-weight: 750;"
-            )
+            button.setMinimumWidth(0)
+            button.setSizePolicy(QSizePolicy.Policy.Expanding, QSizePolicy.Policy.Fixed)
+            button.setMinimumHeight(39)
+            button.set_icon_color("#101820" if mode == "home" else "#aab6c4")
+            button.set_label_color("#101820" if mode == "home" else "#aab6c4")
             button.clicked.connect(
                 lambda _checked=False, selected=mode: self.show_page(selected)
             )
-            layout.addWidget(button)
+            parent_layout.addWidget(button)
             self.nav_buttons[mode] = button
-
-        layout.addStretch(1)
-        return bar
+        parent_layout.addSpacing(11)
 
     def _build_home_page(self) -> QWidget:
         page = QWidget()
