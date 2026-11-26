@@ -50,11 +50,15 @@ class MusicDatabase:
                 "lyrics": "ALTER TABLE tracks ADD COLUMN lyrics TEXT NOT NULL DEFAULT ''",
                 "replaygain_track_gain": "ALTER TABLE tracks ADD COLUMN replaygain_track_gain TEXT NOT NULL DEFAULT ''",
                 "play_count": "ALTER TABLE tracks ADD COLUMN play_count INTEGER NOT NULL DEFAULT 0",
-                "date_added": "ALTER TABLE tracks ADD COLUMN date_added TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP",
+                "date_added": "ALTER TABLE tracks ADD COLUMN date_added TEXT",
             }
             for column, statement in migrations.items():
                 if column not in columns:
                     self.connection.execute(statement)
+
+            self.connection.execute(
+                "UPDATE tracks SET date_added=CURRENT_TIMESTAMP WHERE date_added IS NULL OR date_added=''"
+            )
 
             self.connection.execute(
                 """
