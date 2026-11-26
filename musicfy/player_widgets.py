@@ -76,7 +76,8 @@ def audio_buffer_levels(buffer: Any, band_count: int = 24) -> list[float]:
 
     count = len(mono)
     sample_rate = float(audio_format.sampleRate())
-    max_frequency = min(16000.0, sample_rate * 0.46)
+    effective_sample_rate = sample_rate / hop
+    max_frequency = min(16000.0, effective_sample_rate * 0.46)
     min_frequency = min(45.0, max_frequency / 3.0)
     if max_frequency <= min_frequency:
         return [0.0] * band_count
