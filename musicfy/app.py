@@ -266,7 +266,7 @@ SIEMPRE CONTIGO")
             button.setObjectName("navButton")
             button.setCheckable(True)
             button.setCursor(Qt.CursorShape.PointingHandCursor)
-            button.clicked.connect(partial(self.show_page, mode))
+            button.clicked.connect(lambda _checked=False, selected=mode: self.show_page(selected))
             parent_layout.addWidget(button)
             self.nav_buttons[mode] = button
         parent_layout.addSpacing(12)
