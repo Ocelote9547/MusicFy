@@ -1360,6 +1360,8 @@ class MusicFyWindow(QMainWindow):
             return
         self.queue = list(self.visible_tracks)
         self.current_index = row
+        if self.shuffle_enabled:
+            self._build_shuffle_order(row)
         self.play_track(self.queue[row])
 
     def play_track(self, track: dict[str, Any]) -> None:
@@ -1687,6 +1689,13 @@ class MusicFyWindow(QMainWindow):
         menu.addAction(play_action)
 
         if track.get("in_library", 1):
+            radio_action = QAction("Iniciar radio local de esta canción", self)
+            radio_action.triggered.connect(
+                lambda _checked=False, item=dict(track): self.start_local_radio(item)
+            )
+            menu.addAction(radio_action)
+
+        if track.get("in_library", 1):
             favorite_text = "Quitar de favoritos" if track.get("is_favorite") else "Añadir a favoritos"
             favorite_action = QAction(favorite_text, self)
             favorite_action.triggered.connect(
@@ -1746,7 +1755,46 @@ class MusicFyWindow(QMainWindow):
         )
         track = next((item for item in self.visible_tracks if item["path"] == path), None)
         if track:
+            if self.shuffle_enabled:
+                self._build_shuffle_order(self.current_index)
             self.play_track(track)
+
+    def start_local_radio(self, seed_track: dict[str, Any]) -> None:
+        """Build a radio queue from matching local artist and genre tags."""
+        all_tracks = self.database.list_tracks("all")
+        seed_path = str(seed_track.get("path") or "")
+        artist = str(seed_track.get("artist") or "").strip().casefold()
+        genre = str(seed_track.get("genre") or "").strip().casefold()
+
+        same_artist: list[dict[str, Any]] = []
+        same_genre: list[dict[str, Any]] = []
+        for track in all_tracks:
+            path = str(track.get("path") or "")
+            if not path or path == seed_path:
+                continue
+            track_artist = str(track.get("artist") or "").strip().casefold()
+            track_genre = str(track.get("genre") or "").strip().casefold()
+            if artist and track_artist == artist:
+                same_artist.append(track)
+            elif genre and genre != "sin género" and track_genre == genre:
+                same_genre.append(track)
+
+        random.shuffle(same_artist)
+        random.shuffle(same_genre)
+        related = same_artist + same_genre
+        if not related:
+            related = [track for track in all_tracks if str(track.get("path")) != seed_path]
+            random.shuffle(related)
+
+        self.queue = [seed_track, *related]
+        self.current_index = 0
+        if self.shuffle_enabled:
+            self._build_shuffle_order(0)
+        self.play_track(self.queue[0])
+        source_label = str(seed_track.get("genre") or seed_track.get("artist") or "tu biblioteca")
+        self.statusBar().showMessage(
+            f"Radio local iniciada · {source_label}", 5000
+        )
 
     def toggle_favorite(self, path: str, favorite: bool) -> None:
         self.database.set_favorite(path, favorite)
