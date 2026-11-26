@@ -605,7 +605,7 @@ SIEMPRE CONTIGO")
         for index, record in enumerate(records[:8]):
             card = self._make_collection_card("album", record)
             card.clicked.connect(partial(self.show_collection_detail, "album", record))
-            self.home_album_grid.addWidget(card, index // 4, index % 4)
+            self.home_album_grid.addWidget(card, index // 3, index % 3)
 
         has_tracks = bool(self.database.list_tracks("all"))
         self.home_empty.setVisible(not has_tracks)
