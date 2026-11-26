@@ -588,7 +588,7 @@ class MusicFyWindow(QMainWindow):
         layout.setContentsMargins(3, 3, 8, 18)
         layout.setSpacing(15)
 
-        # Editorial hero: headline, useful action and custom MusicFy artwork.
+        # Editorial hero: headline, playback action and artwork from the local library.
         hero = QFrame()
         hero.setObjectName("heroBanner")
         hero.setMinimumHeight(244)
@@ -606,7 +606,6 @@ class MusicFyWindow(QMainWindow):
 
         hero_title = QLabel("Tu música,\na tu manera.")
         hero_title.setMinimumHeight(88)
-        hero_title.setMinimumHeight(86)
         hero_title.setObjectName("heroTitle")
         copy.addWidget(hero_title)
 
