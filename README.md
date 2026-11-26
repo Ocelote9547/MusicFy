@@ -2,30 +2,36 @@
 
 Reproductor musical de escritorio para Windows y Linux, desarrollado con **Python + PyQt6**. Su identidad visual parte de N3mesis Launcher: superficies oscuras, bordes finos e iluminación cian.
 
-## Versión 0.5.0
+## Versión 0.6.0
 
 ### Biblioteca
 - Biblioteca local con canciones, álbumes, artistas, géneros, favoritos e historial.
 - Metadatos y carátulas incrustadas mediante Mutagen.
 - Caché de portadas en `~/.musicfy/covers`.
 - Búsqueda con retardo breve para no reconstruir la vista en cada pulsación.
-- Inicio con portada destacada basada en álbumes reales y carruseles de álbumes y playlists.
+- Inicio orientado a escuchar: álbum destacado con reproducción directa, carrusel de escuchado recientemente, álbumes de la biblioteca y playlists.
 - Botón de reproducción al pasar el cursor por las carátulas.
+- Vistas dinámicas de añadidos recientemente y más reproducidas, basadas en la actividad local.
 - Importación de archivos y carpetas mediante un hilo de trabajo; el análisis no bloquea la interfaz.
 - Inserción de la biblioteca en lotes SQLite y actualización de tabla con repintado suspendido.
 
 ### Reproductor
-- Pantalla de reproducción ampliada con portada, metadatos, controles y barra de progreso.
+- Pantalla de reproducción ampliada con portada, metadatos, controles, barra de progreso y pestaña de letras incrustadas.
 - Visualizador espectral en tiempo real a partir de buffers PCM decodificados (requiere Qt 6.8+ y backend FFmpeg).
 - Cola reordenable mediante arrastrar y soltar, con opción para retirar pistas de la cola.
 - Reproducción local con Qt Multimedia.
 - Anterior, siguiente, reproducir y pausar.
 - Barra de progreso y volumen.
-- Aleatorio, repetición desactivada / repetir cola / repetir una pista.
+- Aleatorio sin repetir pistas hasta completar una vuelta de la cola.
+- Repetición desactivada / repetir cola / repetir una pista.
+- Temporizador de apagado configurable.
+- ReplayGain para ajustar el volumen según la etiqueta de ganancia incluida en cada archivo.
+- Atajos de teclado: Espacio (reproducir/pausar), Ctrl+F (buscar), Ctrl+O (importar música), Ctrl+L (reproductor ampliado), Ctrl+J (cola) y Ctrl+Shift+S (temporizador).
 - Vista de la cola de reproducción.
 - Carátula y metadatos de la pista actual.
+- Las letras se leen desde etiquetas incrustadas en archivos compatibles; no se descargan letras desde servicios externos.
 
-El ecualizador paramétrico de 10 bandas todavía no aplica procesamiento al audio. Qt Multimedia no proporciona un ecualizador de bandas integrado en QMediaPlayer; se añadirá cuando se integre una etapa DSP real, sin presentar controles decorativos como si alterasen el sonido.
+El ecualizador gráfico de 10 bandas y el crossfade real siguen pendientes. Qt Multimedia no ofrece esos efectos integrados en QMediaPlayer; requieren una etapa DSP o un motor de audio con mezcla de señales. ReplayGain no sustituye a un ecualizador.
 
 ### Playlists M3U
 - Crear y eliminar playlists desde la aplicación.
@@ -73,6 +79,14 @@ source .venv/bin/activate
 python -m pip install -r requirements.txt
 python main.py
 ```
+
+## Atajos de teclado
+- `Espacio`: reproducir / pausar (excepto cuando el foco está en un campo de texto).
+- `Ctrl+F`: enfocar búsqueda.
+- `Ctrl+O`: importar archivos de audio.
+- `Ctrl+L`: abrir reproducción ampliada.
+- `Ctrl+J`: mostrar cola.
+- `Ctrl+Shift+S`: configurar temporizador de apagado.
 
 ## Módulos principales
 - `musicfy/app.py`: ventana, biblioteca, navegación y conexiones del reproductor.
