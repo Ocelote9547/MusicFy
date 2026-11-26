@@ -494,6 +494,7 @@ class MusicFyWindow(QMainWindow):
             button = IconButton(icon_name, title, icon_size=17)
             button.setObjectName("navButton")
             button.setCheckable(True)
+            button.setChecked(mode == "home")
             button.setMinimumWidth(0)
             button.setSizePolicy(QSizePolicy.Policy.Expanding, QSizePolicy.Policy.Fixed)
             button.setMinimumHeight(39)
