@@ -29,7 +29,13 @@ def audio_buffer_levels(buffer: Any, band_count: int = 24) -> list[float]:
         return [0.0] * band_count
 
     byte_count = int(buffer.byteCount())
-    payload = buffer.constData()
+    try:
+        payload = buffer.constData()
+    except (AttributeError, TypeError):
+        try:
+            payload = buffer.data()
+        except (AttributeError, TypeError):
+            return [0.0] * band_count
     try:
         if hasattr(payload, "asstring"):
             raw = payload.asstring(byte_count)
