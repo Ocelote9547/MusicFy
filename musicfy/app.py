@@ -250,7 +250,7 @@ class MusicFyWindow(QMainWindow):
         local_note.setObjectName("sidebar_note")
         side_layout.addWidget(local_note)
 
-        version = QLabel("MUSICFY  ·  0.2.0")
+        version = QLabel("MUSICFY  ·  0.2.1")
         version.setObjectName("version")
         side_layout.addWidget(version)
         return sidebar
@@ -319,7 +319,14 @@ class MusicFyWindow(QMainWindow):
         self.hero_artwork.setObjectName("heroArtwork")
         self.hero_artwork.setFixedSize(205, 150)
         self.hero_artwork.setAlignment(Qt.AlignmentFlag.AlignCenter)
-        self.hero_artwork.setPixmap(self._hero_artwork())
+        self.hero_artwork.setPixmap(
+            self._hero_artwork().scaled(
+                205,
+                150,
+                Qt.AspectRatioMode.IgnoreAspectRatio,
+                Qt.TransformationMode.SmoothTransformation,
+            )
+        )
         self.hero_artwork.setAttribute(Qt.WidgetAttribute.WA_TransparentForMouseEvents)
         hero_layout.addWidget(
             self.hero_artwork,
