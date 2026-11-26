@@ -311,7 +311,7 @@ class MusicFyWindow(QMainWindow):
         self.setWindowTitle("N3mesisFy")
         self.setObjectName("musicFyWindow")
         self.resize(1360, 880)
-        self.setMinimumSize(1000, 700)
+        self.setMinimumSize(1100, 740)
 
         self.database = MusicDatabase()
         self.player = QMediaPlayer(self)
@@ -454,7 +454,7 @@ class MusicFyWindow(QMainWindow):
         ])
         self._add_nav_group(side_layout, "TU MÚSICA", [
             ("star", "Favoritos", "favorites"),
-            ("history", "Escuchado recientemente", "history"),
+            ("history", "Recientes", "history"),
             ("playlist", "Playlists", "playlists"),
         ])
 
@@ -1150,7 +1150,7 @@ class MusicFyWindow(QMainWindow):
         painter.setFont(QFont("Segoe UI", 54, QFont.Weight.Bold))
         painter.drawText(76, 142, "M")
         painter.setFont(QFont("Segoe UI", 10, QFont.Weight.Bold))
-        painter.drawText(78, 173, "MUSICFY")
+        painter.drawText(78, 173, "N3MESISFY")
         painter.end()
         return pixmap
 
@@ -1238,6 +1238,7 @@ class MusicFyWindow(QMainWindow):
         self.import_worker.progress.connect(self._show_import_progress)
         self.import_worker.completed.connect(self._finish_library_import)
         self.import_worker.failed.connect(self._fail_library_import)
+        self.import_worker.finished.connect(self._release_import_worker)
         self.import_worker.start()
         self.statusBar().showMessage("Preparando biblioteca en segundo plano…")
 
@@ -1261,8 +1262,7 @@ class MusicFyWindow(QMainWindow):
         self.statusBar().showMessage(
             f"Biblioteca actualizada: {count} archivos analizados.", 7000
         )
-        self.import_worker = None
-
+    
     def _fail_library_import(self, message: str) -> None:
         self._set_import_busy(False)
         self.statusBar().showMessage("La importación terminó con algunos errores.", 7000)
@@ -1270,6 +1270,8 @@ class MusicFyWindow(QMainWindow):
             self, "Error al importar música",
             "No se pudo completar el análisis de la biblioteca.\n\n" + message[:1000]
         )
+    
+    def _release_import_worker(self) -> None:
         self.import_worker = None
 
     # ------------------------------------------------------------------
@@ -1763,6 +1765,9 @@ class MusicFyWindow(QMainWindow):
             )
 
     def closeEvent(self, event: Any) -> None:
+        if self.import_worker and self.import_worker.isRunning():
+            self.import_worker.requestInterruption()
+            self.import_worker.wait(5000)
         if self.online_resolver and self.online_resolver.isRunning():
             self.online_resolver.quit()
             self.online_resolver.wait(1500)
