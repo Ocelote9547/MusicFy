@@ -13,6 +13,8 @@ from PyQt6.QtGui import (
     QIcon,
     QLinearGradient,
     QPainter,
+    QPainterPath,
+    QPen,
     QPixmap,
 )
 from PyQt6.QtMultimedia import QAudioOutput, QMediaPlayer
@@ -31,6 +33,7 @@ from PyQt6.QtWidgets import (
     QScrollArea,
     QSlider,
     QStackedWidget,
+    QSizePolicy,
     QTableWidget,
     QTableWidgetItem,
     QVBoxLayout,
@@ -41,6 +44,161 @@ from PyQt6.QtWidgets import (
 from musicfy.database import MusicDatabase
 from musicfy.library import read_audio_file, scan_folder
 from musicfy.online import OnlineResolver
+
+
+def draw_vector_icon(painter: QPainter, name: str, color: str, size: int) -> None:
+    """Paint consistent outline icons without emoji fonts or external assets."""
+    painter.save()
+    painter.scale(size / 24.0, size / 24.0)
+    pen = QPen(QColor(color))
+    pen.setWidthF(1.8)
+    pen.setCapStyle(Qt.PenCapStyle.RoundCap)
+    pen.setJoinStyle(Qt.PenJoinStyle.RoundJoin)
+    painter.setPen(pen)
+    painter.setBrush(Qt.BrushStyle.NoBrush)
+    path = QPainterPath()
+
+    if name == "home":
+        path.moveTo(3, 10.5); path.lineTo(12, 3); path.lineTo(21, 10.5)
+        path.moveTo(5.5, 9.5); path.lineTo(5.5, 21); path.lineTo(10, 21)
+        path.lineTo(10, 15); path.lineTo(14, 15); path.lineTo(14, 21)
+        path.lineTo(18.5, 21); path.lineTo(18.5, 9.5)
+        painter.drawPath(path)
+    elif name == "tracks":
+        painter.drawRoundedRect(4, 3, 16, 18, 2, 2)
+        for y, end in ((8, 16), (12, 16), (16, 14)):
+            painter.drawLine(8, y, end, y)
+            painter.drawEllipse(6, y - .5, 1, 1)
+    elif name == "albums":
+        painter.drawRoundedRect(3, 3, 18, 18, 3, 3)
+        painter.drawEllipse(7, 7, 10, 10)
+        painter.drawEllipse(10.5, 10.5, 3, 3)
+    elif name == "artist":
+        painter.drawEllipse(8, 3, 8, 8)
+        path.moveTo(4, 21); path.cubicTo(4.5, 16.5, 7, 14.5, 12, 14.5)
+        path.cubicTo(17, 14.5, 19.5, 16.5, 20, 21)
+        painter.drawPath(path)
+    elif name == "genres":
+        for y, knob_x in ((6, 8), (12, 16), (18, 10)):
+            painter.drawLine(3, y, 21, y)
+            painter.setBrush(QColor("#0d1117"))
+            painter.drawEllipse(knob_x - 2, y - 2, 4, 4)
+            painter.setBrush(Qt.BrushStyle.NoBrush)
+    elif name == "star":
+        points = [(12, 2.5), (14.8, 8.5), (21.3, 9.3), (16.5, 13.8),
+                  (17.7, 20.5), (12, 17.2), (6.3, 20.5), (7.5, 13.8),
+                  (2.7, 9.3), (9.2, 8.5)]
+        path.moveTo(*points[0])
+        for point in points[1:]: path.lineTo(*point)
+        path.closeSubpath()
+        painter.drawPath(path)
+    elif name == "history":
+        painter.drawEllipse(3, 3, 18, 18)
+        painter.drawLine(12, 6.5, 12, 12); painter.drawLine(12, 12, 16, 14.5)
+        painter.drawLine(3.5, 7, 3.5, 3.5); painter.drawLine(3.5, 3.5, 7, 3.5)
+    elif name == "plus":
+        painter.drawLine(12, 4, 12, 20); painter.drawLine(4, 12, 20, 12)
+    elif name == "folder":
+        path.moveTo(2.5, 7); path.lineTo(2.5, 19)
+        path.quadTo(2.5, 21, 4.5, 21); path.lineTo(19.5, 21)
+        path.quadTo(21.5, 21, 21.5, 19); path.lineTo(21.5, 8.5)
+        path.quadTo(21.5, 6.5, 19.5, 6.5); path.lineTo(11, 6.5)
+        path.lineTo(8.8, 4); path.lineTo(4.5, 4)
+        path.quadTo(2.5, 4, 2.5, 6); path.closeSubpath()
+        painter.drawPath(path)
+    elif name == "globe":
+        painter.drawEllipse(3, 3, 18, 18); painter.drawEllipse(8, 3, 8, 18)
+        painter.drawLine(4, 9, 20, 9); painter.drawLine(4, 15, 20, 15)
+    elif name == "arrow-right":
+        painter.drawLine(4, 12, 20, 12); painter.drawLine(14, 6, 20, 12)
+        painter.drawLine(14, 18, 20, 12)
+    elif name == "arrow-left":
+        painter.drawLine(20, 12, 4, 12); painter.drawLine(10, 6, 4, 12)
+        painter.drawLine(10, 18, 4, 12)
+    elif name == "search":
+        painter.drawEllipse(3, 3, 13, 13); painter.drawLine(15, 15, 21, 21)
+    elif name == "music-note":
+        path.moveTo(15, 4); path.lineTo(15, 16); path.moveTo(15, 5)
+        path.lineTo(21, 3.5); path.lineTo(21, 15)
+        painter.drawPath(path); painter.setBrush(QColor(color))
+        painter.drawEllipse(9, 14.5, 6, 5); painter.drawEllipse(15, 13.5, 6, 5)
+    elif name == "play":
+        path.moveTo(7, 4); path.lineTo(20, 12); path.lineTo(7, 20); path.closeSubpath()
+        painter.setBrush(QColor(color)); painter.drawPath(path)
+    elif name == "pause":
+        painter.setBrush(QColor(color)); painter.setPen(Qt.PenStyle.NoPen)
+        painter.drawRoundedRect(6, 4, 4.5, 16, 1, 1)
+        painter.drawRoundedRect(13.5, 4, 4.5, 16, 1, 1)
+    elif name == "previous":
+        painter.setBrush(QColor(color)); painter.setPen(Qt.PenStyle.NoPen)
+        path.moveTo(19, 5); path.lineTo(8, 12); path.lineTo(19, 19); path.closeSubpath()
+        painter.drawPath(path); painter.drawRoundedRect(4, 5, 2.2, 14, 1, 1)
+    elif name == "next":
+        painter.setBrush(QColor(color)); painter.setPen(Qt.PenStyle.NoPen)
+        path.moveTo(5, 5); path.lineTo(16, 12); path.lineTo(5, 19); path.closeSubpath()
+        painter.drawPath(path); painter.drawRoundedRect(18, 5, 2.2, 14, 1, 1)
+
+    painter.restore()
+
+
+class IconGlyph(QLabel):
+    """Small vector glyph used consistently throughout MusicFy."""
+
+    def __init__(self, icon_name: str, color: str = "#c9d4e1",
+                 size: int = 20, parent: QWidget | None = None) -> None:
+        super().__init__(parent)
+        self.icon_name = icon_name
+        self.icon_color = color
+        self.icon_size = size
+        self.setFixedSize(size + 2, size + 2)
+        self.setAlignment(Qt.AlignmentFlag.AlignCenter)
+        self.setAttribute(Qt.WidgetAttribute.WA_TransparentForMouseEvents)
+
+    def set_icon(self, icon_name: str) -> None:
+        self.icon_name = icon_name
+        self.update()
+
+    def set_color(self, color: str) -> None:
+        self.icon_color = color
+        self.update()
+
+    def paintEvent(self, event: Any) -> None:
+        painter = QPainter(self)
+        painter.setRenderHint(QPainter.RenderHint.Antialiasing, True)
+        painter.translate((self.width() - self.icon_size) / 2,
+                          (self.height() - self.icon_size) / 2)
+        draw_vector_icon(painter, self.icon_name, self.icon_color, self.icon_size)
+        painter.end()
+
+
+class IconButton(QPushButton):
+    """Button with a vector icon and a label, never a Unicode symbol."""
+
+    def __init__(self, icon_name: str, label: str = "",
+                 parent: QWidget | None = None, icon_color: str = "#c9d4e1",
+                 icon_size: int = 17) -> None:
+        super().__init__(parent)
+        self.setCursor(Qt.CursorShape.PointingHandCursor)
+        self.setAccessibleName(label or icon_name.replace("-", " "))
+        self._button_layout = QHBoxLayout(self)
+        self._button_layout.setContentsMargins(12, 0, 12, 0)
+        self._button_layout.setSpacing(9)
+        self.icon_widget = IconGlyph(icon_name, icon_color, icon_size, self)
+        self._button_layout.addWidget(self.icon_widget, 0, Qt.AlignmentFlag.AlignVCenter)
+        self.label_widget = QLabel(label, self)
+        self.label_widget.setAttribute(Qt.WidgetAttribute.WA_TransparentForMouseEvents)
+        self._button_layout.addWidget(self.label_widget, 0, Qt.AlignmentFlag.AlignVCenter)
+        self._button_layout.addStretch(1)
+        if not label:
+            self._button_layout.setContentsMargins(0, 0, 0, 0)
+            self._button_layout.setSpacing(0)
+
+    def set_icon(self, icon_name: str) -> None:
+        self.icon_widget.set_icon(icon_name)
+
+    def set_icon_color(self, color: str) -> None:
+        self.icon_widget.set_color(color)
+
 
 
 class CollectionCard(QFrame):
@@ -165,7 +323,7 @@ class MusicFyWindow(QMainWindow):
         header.addLayout(header_copy)
         header.addStretch(1)
 
-        self.online_button = QPushButton("↗  URL online")
+        self.online_button = IconButton("globe", "URL online")
         self.online_button.setObjectName("secondaryButton")
         self.online_button.setCursor(Qt.CursorShape.PointingHandCursor)
         self.online_button.clicked.connect(self.open_online_url)
@@ -175,18 +333,18 @@ class MusicFyWindow(QMainWindow):
         action_row = QHBoxLayout()
         self.search_box = QLineEdit()
         self.search_box.setObjectName("searchBox")
-        self.search_box.setPlaceholderText("⌕   Busca dentro de esta sección...")
+        self.search_box.setPlaceholderText("Buscar canciones, álbumes, artistas o géneros...")
         self.search_box.setClearButtonEnabled(True)
         self.search_box.textChanged.connect(self.refresh_content)
         action_row.addWidget(self.search_box, 1)
 
-        add_files_button = QPushButton("+  Añadir música")
+        add_files_button = IconButton("plus", "Añadir música")
         add_files_button.setObjectName("primaryButton")
         add_files_button.setCursor(Qt.CursorShape.PointingHandCursor)
         add_files_button.clicked.connect(self.add_audio_files)
         action_row.addWidget(add_files_button)
 
-        add_folder_button = QPushButton("Añadir carpeta")
+        add_folder_button = IconButton("folder", "Añadir carpeta")
         add_folder_button.setObjectName("secondaryButton")
         add_folder_button.setCursor(Qt.CursorShape.PointingHandCursor)
         add_folder_button.clicked.connect(self.add_music_folder)
@@ -213,10 +371,9 @@ class MusicFyWindow(QMainWindow):
         side_layout.setSpacing(7)
 
         brand_row = QHBoxLayout()
-        brand_mark = QLabel("♫")
+        brand_mark = IconGlyph("music-note", "#ffffff", 23)
         brand_mark.setObjectName("brandMark")
         brand_mark.setFixedSize(38, 38)
-        brand_mark.setAlignment(Qt.AlignmentFlag.AlignCenter)
         brand_row.addWidget(brand_mark)
 
         brand = QLabel("MusicFy")
@@ -231,17 +388,17 @@ class MusicFyWindow(QMainWindow):
         side_layout.addSpacing(25)
 
         self._add_nav_group(side_layout, "DESCUBRIR", [
-            ("⌂", "Inicio", "home"),
+            ("home", "Inicio", "home"),
         ])
         self._add_nav_group(side_layout, "TU COLECCIÓN", [
-            ("♫", "Canciones", "tracks"),
-            ("▦", "Álbumes", "albums"),
-            ("◉", "Artistas", "artists"),
-            ("◇", "Géneros", "genres"),
+            ("tracks", "Canciones", "tracks"),
+            ("albums", "Álbumes", "albums"),
+            ("artist", "Artistas", "artists"),
+            ("genres", "Géneros", "genres"),
         ])
         self._add_nav_group(side_layout, "TU MÚSICA", [
-            ("★", "Favoritos", "favorites"),
-            ("◷", "Escuchado recientemente", "history"),
+            ("star", "Favoritos", "favorites"),
+            ("history", "Escuchado recientemente", "history"),
         ])
 
         side_layout.addStretch(1)
@@ -250,7 +407,7 @@ class MusicFyWindow(QMainWindow):
         local_note.setObjectName("sidebar_note")
         side_layout.addWidget(local_note)
 
-        version = QLabel("MUSICFY  ·  0.2.1")
+        version = QLabel("MUSICFY  ·  0.3.0")
         version.setObjectName("version")
         side_layout.addWidget(version)
         return sidebar
@@ -264,8 +421,8 @@ class MusicFyWindow(QMainWindow):
         label = QLabel(heading)
         label.setObjectName("navGroupLabel")
         parent_layout.addWidget(label)
-        for symbol, title, mode in items:
-            button = QPushButton(f"{symbol}    {title}")
+        for icon_name, title, mode in items:
+            button = IconButton(icon_name, title)
             button.setObjectName("navButton")
             button.setCheckable(True)
             button.setCursor(Qt.CursorShape.PointingHandCursor)
@@ -307,7 +464,7 @@ class MusicFyWindow(QMainWindow):
         hero_text.setMaximumWidth(440)
         copy.addWidget(hero_text)
 
-        explore = QPushButton("Explorar mi biblioteca  →")
+        explore = IconButton("arrow-right", "Explorar mi biblioteca")
         explore.setObjectName("heroButton")
         explore.setCursor(Qt.CursorShape.PointingHandCursor)
         explore.clicked.connect(lambda: self.show_page("tracks"))
@@ -338,10 +495,10 @@ class MusicFyWindow(QMainWindow):
         # Compact library metrics instead of oversized dashboard tiles.
         stats = QHBoxLayout()
         stats.setSpacing(12)
-        self.total_stat = self._make_stat_card("CANCIONES", "0", "♫")
-        self.album_stat = self._make_stat_card("ÁLBUMES", "0", "▦")
-        self.artist_stat = self._make_stat_card("ARTISTAS", "0", "◉")
-        self.favorites_stat = self._make_stat_card("FAVORITOS", "0", "★")
+        self.total_stat = self._make_stat_card("CANCIONES", "0", "tracks")
+        self.album_stat = self._make_stat_card("ÁLBUMES", "0", "albums")
+        self.artist_stat = self._make_stat_card("ARTISTAS", "0", "artist")
+        self.favorites_stat = self._make_stat_card("FAVORITOS", "0", "star")
         for card in (self.total_stat, self.album_stat, self.artist_stat, self.favorites_stat):
             card.setMinimumHeight(76)
             card.setMaximumHeight(82)
@@ -355,7 +512,7 @@ class MusicFyWindow(QMainWindow):
         section_title.setObjectName("sectionTitle")
         section_header.addWidget(section_title)
         section_header.addStretch(1)
-        all_albums = QPushButton("Ver toda la colección  →")
+        all_albums = IconButton("arrow-right", "Ver toda la colección")
         all_albums.setObjectName("textButton")
         all_albums.setCursor(Qt.CursorShape.PointingHandCursor)
         all_albums.clicked.connect(lambda: self.show_page("albums"))
@@ -389,10 +546,9 @@ class MusicFyWindow(QMainWindow):
         empty_layout.setContentsMargins(24, 22, 24, 22)
         empty_layout.setSpacing(19)
 
-        self.home_empty_icon = QLabel("♫")
+        self.home_empty_icon = IconGlyph("albums", "#d8e8f2", 30)
         self.home_empty_icon.setObjectName("emptyStateIcon")
         self.home_empty_icon.setFixedSize(64, 64)
-        self.home_empty_icon.setAlignment(Qt.AlignmentFlag.AlignCenter)
         empty_layout.addWidget(self.home_empty_icon)
 
         empty_copy = QVBoxLayout()
@@ -413,13 +569,13 @@ class MusicFyWindow(QMainWindow):
 
         empty_actions = QVBoxLayout()
         empty_actions.setSpacing(8)
-        empty_files_button = QPushButton("+  Añadir canciones")
+        empty_files_button = IconButton("plus", "Añadir canciones")
         empty_files_button.setObjectName("primaryButton")
         empty_files_button.setCursor(Qt.CursorShape.PointingHandCursor)
         empty_files_button.clicked.connect(self.add_audio_files)
         empty_actions.addWidget(empty_files_button)
 
-        empty_folder_button = QPushButton("Elegir carpeta")
+        empty_folder_button = IconButton("folder", "Elegir carpeta")
         empty_folder_button.setObjectName("secondaryButton")
         empty_folder_button.setCursor(Qt.CursorShape.PointingHandCursor)
         empty_folder_button.clicked.connect(self.add_music_folder)
@@ -435,7 +591,7 @@ class MusicFyWindow(QMainWindow):
         layout.setSpacing(10)
 
         detail_row = QHBoxLayout()
-        self.back_button = QPushButton("←  Volver a la colección")
+        self.back_button = IconButton("arrow-left", "Volver a la colección")
         self.back_button.setObjectName("textButton")
         self.back_button.clicked.connect(self.return_from_detail)
         self.back_button.hide()
@@ -448,7 +604,7 @@ class MusicFyWindow(QMainWindow):
 
         self.table = QTableWidget(0, 5)
         self.table.setObjectName("trackTable")
-        self.table.setHorizontalHeaderLabels(["TÍTULO", "ARTISTA", "ÁLBUM", "DURACIÓN", "★"])
+        self.table.setHorizontalHeaderLabels(["TÍTULO", "ARTISTA", "ÁLBUM", "DURACIÓN", "FAV"])
         self.table.verticalHeader().setVisible(False)
         self.table.verticalHeader().setDefaultSectionSize(56)
         self.table.setShowGrid(False)
@@ -507,10 +663,11 @@ class MusicFyWindow(QMainWindow):
         player_layout.addLayout(progress_row)
 
         controls = QHBoxLayout()
-        self.cover_placeholder = QLabel("♫")
+        self.cover_placeholder = QLabel()
         self.cover_placeholder.setObjectName("coverPlaceholder")
         self.cover_placeholder.setFixedSize(50, 50)
         self.cover_placeholder.setAlignment(Qt.AlignmentFlag.AlignCenter)
+        self.cover_placeholder.setPixmap(self._icon_pixmap("music-note", "#d8e8f2", 25))
         controls.addWidget(self.cover_placeholder)
 
         current = QVBoxLayout()
@@ -523,18 +680,18 @@ class MusicFyWindow(QMainWindow):
         controls.addLayout(current)
         controls.addStretch(1)
 
-        self.previous_button = QPushButton("⏮")
+        self.previous_button = IconButton("previous")
         self.previous_button.setObjectName("controlButton")
         self.previous_button.clicked.connect(lambda: self.skip_track(-1))
         controls.addWidget(self.previous_button)
 
-        self.play_button = QPushButton("▶")
+        self.play_button = IconButton("play")
         self.play_button.setObjectName("playButton")
         self.play_button.setFixedSize(42, 42)
         self.play_button.clicked.connect(self.toggle_playback)
         controls.addWidget(self.play_button)
 
-        self.next_button = QPushButton("⏭")
+        self.next_button = IconButton("next")
         self.next_button.setObjectName("controlButton")
         self.next_button.clicked.connect(lambda: self.skip_track(1))
         controls.addWidget(self.next_button)
@@ -555,15 +712,14 @@ class MusicFyWindow(QMainWindow):
         player_layout.addLayout(controls)
         return player_bar
 
-    def _make_stat_card(self, heading: str, value: str, symbol: str) -> QFrame:
+    def _make_stat_card(self, heading: str, value: str, icon_name: str) -> QFrame:
         card = QFrame()
         card.setObjectName("statCard")
         layout = QHBoxLayout(card)
         layout.setContentsMargins(13, 11, 13, 11)
         layout.setSpacing(10)
-        icon = QLabel(symbol)
+        icon = IconGlyph(icon_name, "#d6e4ef", 21)
         icon.setObjectName("statIcon")
-        icon.setFixedWidth(24)
         layout.addWidget(icon)
         text_layout = QVBoxLayout()
         text_layout.setSpacing(2)
@@ -690,13 +846,13 @@ class MusicFyWindow(QMainWindow):
         self.home_empty_card.setVisible(show_empty)
 
         if not has_music:
-            self.home_empty_icon.setText("♫")
+            self.home_empty_icon.set_icon("albums")
             self.home_empty_title.setText("Tu biblioteca empieza aquí")
             self.home_empty.setText(
                 "Añade tus archivos o selecciona una carpeta para reunir toda tu música."
             )
         elif not has_albums:
-            self.home_empty_icon.setText("⌕")
+            self.home_empty_icon.set_icon("search")
             self.home_empty_title.setText("No encontramos esos álbumes")
             self.home_empty.setText(
                 "Prueba con otro título o artista, o borra la búsqueda para volver a tu colección."
@@ -837,6 +993,16 @@ class MusicFyWindow(QMainWindow):
         return self._placeholder_cover(seed)
 
     @staticmethod
+    def _icon_pixmap(icon_name: str, color: str, size: int = 24) -> QPixmap:
+        pixmap = QPixmap(size, size)
+        pixmap.fill(Qt.GlobalColor.transparent)
+        painter = QPainter(pixmap)
+        painter.setRenderHint(QPainter.RenderHint.Antialiasing, True)
+        draw_vector_icon(painter, icon_name, color, size)
+        painter.end()
+        return pixmap
+
+    @staticmethod
     def _placeholder_cover(seed: str) -> QPixmap:
         digest = hashlib.sha1(seed.encode("utf-8", errors="replace")).digest()
         hue = int.from_bytes(digest[:2], "big") % 360
@@ -856,7 +1022,7 @@ class MusicFyWindow(QMainWindow):
         painter.drawEllipse(-130, 330, 330, 330)
         painter.setPen(QColor(255, 255, 255, 225))
         painter.setFont(QFont("Segoe UI", 112, QFont.Weight.Bold))
-        letters = "".join(part[0] for part in seed.split()[:2]).upper() or "♫"
+        letters = "".join(part[0] for part in seed.split()[:2]).upper() or "MF"
         painter.drawText(pixmap.rect(), Qt.AlignmentFlag.AlignCenter, letters)
         painter.end()
         return pixmap
@@ -931,7 +1097,9 @@ class MusicFyWindow(QMainWindow):
             duration_item.setTextAlignment(Qt.AlignmentFlag.AlignCenter)
             self.table.setItem(row, 3, duration_item)
 
-            favorite_item = QTableWidgetItem("★" if track["is_favorite"] else "")
+            favorite_item = QTableWidgetItem("")
+            if track["is_favorite"]:
+                favorite_item.setIcon(QIcon(self._icon_pixmap("star", "#13aee8", 16)))
             favorite_item.setTextAlignment(Qt.AlignmentFlag.AlignCenter)
             self.table.setItem(row, 4, favorite_item)
 
@@ -1013,8 +1181,8 @@ class MusicFyWindow(QMainWindow):
             self.skip_track(1)
 
     def update_play_button(self, state: QMediaPlayer.PlaybackState) -> None:
-        self.play_button.setText(
-            "Ⅱ" if state == QMediaPlayer.PlaybackState.PlayingState else "▶"
+        self.play_button.set_icon(
+            "pause" if state == QMediaPlayer.PlaybackState.PlayingState else "play"
         )
 
     def update_position(self, position: int) -> None:
