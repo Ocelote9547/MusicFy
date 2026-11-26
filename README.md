@@ -2,7 +2,7 @@
 
 Reproductor musical de escritorio para Windows y Linux, desarrollado con **Python + PyQt6**. Su identidad visual parte de N3mesis Launcher: superficies oscuras, bordes finos e iluminación cian.
 
-## Versión 0.4.1
+## Versión 0.5.0
 
 ### Biblioteca
 - Biblioteca local con canciones, álbumes, artistas, géneros, favoritos e historial.
@@ -12,15 +12,21 @@ Reproductor musical de escritorio para Windows y Linux, desarrollado con **Pytho
 - Inicio con portada destacada basada en álbumes reales y carrusel de playlists.
 - Botón de reproducción al pasar el cursor por las carátulas.
 - Importación de archivos y carpetas mediante un hilo de trabajo; el análisis no bloquea la interfaz.
+- Inicio con portada destacada tomada de la biblioteca, carrusel de álbumes y carrusel de playlists.
 - Inserción de la biblioteca en lotes SQLite y actualización de tabla con repintado suspendido.
 
 ### Reproductor
+- Pantalla de reproducción ampliada con portada, metadatos, controles y barra de progreso.
+- Visualizador espectral en tiempo real a partir de buffers PCM decodificados (requiere Qt 6.8+ y backend FFmpeg).
+- Cola reordenable mediante arrastrar y soltar, con opción para retirar pistas de la cola.
 - Reproducción local con Qt Multimedia.
 - Anterior, siguiente, reproducir y pausar.
 - Barra de progreso y volumen.
 - Aleatorio, repetición desactivada / repetir cola / repetir una pista.
 - Vista de la cola de reproducción.
 - Carátula y metadatos de la pista actual.
+
+El ecualizador paramétrico de 10 bandas todavía no aplica procesamiento al audio. Qt Multimedia no proporciona un ecualizador de bandas integrado en QMediaPlayer; se añadirá cuando se integre una etapa DSP real, sin presentar controles decorativos como si alterasen el sonido.
 
 ### Playlists M3U
 - Crear y eliminar playlists desde la aplicación.
