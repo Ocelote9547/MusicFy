@@ -199,6 +199,9 @@ class IconButton(QPushButton):
     def set_icon_color(self, color: str) -> None:
         self.icon_widget.set_color(color)
 
+    def set_label_color(self, color: str) -> None:
+        self.label_widget.setStyleSheet(f"color: {color}; font-weight: 800;")
+
 
 
 class CollectionCard(QFrame):
@@ -339,6 +342,8 @@ class MusicFyWindow(QMainWindow):
         action_row.addWidget(self.search_box, 1)
 
         add_files_button = IconButton("plus", "Añadir música")
+        add_files_button.set_icon_color("#06131b")
+        add_files_button.set_label_color("#06131b")
         add_files_button.setObjectName("primaryButton")
         add_files_button.setCursor(Qt.CursorShape.PointingHandCursor)
         add_files_button.clicked.connect(self.add_audio_files)
@@ -471,6 +476,8 @@ class MusicFyWindow(QMainWindow):
         copy.addWidget(hero_text)
 
         explore = IconButton("arrow-right", "Explorar mi biblioteca")
+        explore.set_icon_color("#06131b")
+        explore.set_label_color("#06131b")
         explore.setObjectName("heroButton")
         explore.setCursor(Qt.CursorShape.PointingHandCursor)
         explore.clicked.connect(lambda: self.show_page("tracks"))
@@ -576,6 +583,8 @@ class MusicFyWindow(QMainWindow):
         empty_actions = QVBoxLayout()
         empty_actions.setSpacing(8)
         empty_files_button = IconButton("plus", "Añadir canciones")
+        empty_files_button.set_icon_color("#06131b")
+        empty_files_button.set_label_color("#06131b")
         empty_files_button.setObjectName("primaryButton")
         empty_files_button.setCursor(Qt.CursorShape.PointingHandCursor)
         empty_files_button.clicked.connect(self.add_audio_files)
@@ -954,14 +963,14 @@ class MusicFyWindow(QMainWindow):
     @staticmethod
     def _hero_artwork() -> QPixmap:
         pixmap = QPixmap(420, 260)
-        pixmap.fill(QColor("#14243c"))
+        pixmap.fill(QColor("#0d1d27"))
         painter = QPainter(pixmap)
         painter.setRenderHint(QPainter.RenderHint.Antialiasing, True)
 
         background = QLinearGradient(0, 0, 420, 260)
-        background.setColorAt(0, QColor("#293e67"))
-        background.setColorAt(0.55, QColor("#172b49"))
-        background.setColorAt(1, QColor("#0d1728"))
+        background.setColorAt(0, QColor("#123f56"))
+        background.setColorAt(0.55, QColor("#102c3a"))
+        background.setColorAt(1, QColor("#0b151c"))
         painter.setPen(Qt.PenStyle.NoPen)
         painter.setBrush(background)
         painter.drawRoundedRect(0, 0, 420, 260, 28, 28)
@@ -974,18 +983,18 @@ class MusicFyWindow(QMainWindow):
             painter.setBrush(Qt.BrushStyle.NoBrush)
             painter.setPen(QColor(185, 205, 250, 25))
             painter.drawEllipse(218 + inset, 28 + inset, 206 - inset * 2, 206 - inset * 2)
-        painter.setBrush(QColor("#8eafff"))
+        painter.setBrush(QColor("#12aee9"))
         painter.setPen(QColor(220, 230, 255, 110))
         painter.drawEllipse(297, 107, 48, 48)
-        painter.setBrush(QColor("#17243a"))
+        painter.setBrush(QColor("#0d2633"))
         painter.setPen(Qt.PenStyle.NoPen)
         painter.drawEllipse(314, 124, 14, 14)
 
         # Overlapping sleeve gives the composition a real album-art cue.
         sleeve = QLinearGradient(40, 20, 195, 230)
-        sleeve.setColorAt(0, QColor("#b7caff"))
-        sleeve.setColorAt(0.48, QColor("#617fca"))
-        sleeve.setColorAt(1, QColor("#253b68"))
+        sleeve.setColorAt(0, QColor("#a4e5f9"))
+        sleeve.setColorAt(0.48, QColor("#1688b4"))
+        sleeve.setColorAt(1, QColor("#103747"))
         painter.setBrush(sleeve)
         painter.setPen(QColor(235, 242, 255, 135))
         painter.drawRoundedRect(48, 32, 150, 190, 12, 12)
