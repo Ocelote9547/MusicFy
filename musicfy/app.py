@@ -299,7 +299,7 @@ class CollectionCard(QFrame):
         self.play_overlay.setObjectName("cardPlayButton")
         self.play_overlay.setFixedSize(40, 40)
         self.play_overlay.setToolTip("Reproducir")
-        self.play_overlay.clicked.connect(self.play_requested.emit)
+        self.play_overlay.clicked.connect(lambda _checked=False: self.play_requested.emit())
         self.play_overlay.hide()
         artwork_layout.addWidget(
             self.play_overlay, 0, 0,
