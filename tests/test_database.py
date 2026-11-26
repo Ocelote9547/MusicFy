@@ -115,5 +115,52 @@ class MusicDatabaseTests(unittest.TestCase):
         self.assertIsNone(tracks[0]["cover_path"])
 
 
+    def test_playlist_storage_order_and_library_metadata(self) -> None:
+        self.database.save_track({
+            "path": "/music/library-song.mp3",
+            "title": "Tagged title",
+            "artist": "Tagged artist",
+            "album": "Tagged album",
+            "duration": 180,
+        })
+        playlist_id = self.database.create_playlist("Road trip")
+        self.database.save_playlist_tracks(
+            playlist_id,
+            [
+                {
+                    "path": "/music/library-song.mp3",
+                    "title": "M3U title",
+                    "artist": "M3U artist",
+                    "duration": 100,
+                },
+                {
+                    "path": "/external/missing-song.mp3",
+                    "title": "Offline song",
+                    "artist": "Guest",
+                    "duration": 90,
+                },
+            ],
+        )
+
+        playlists = self.database.list_playlists()
+        self.assertEqual(len(playlists), 1)
+        self.assertEqual(playlists[0]["track_count"], 2)
+
+        tracks = self.database.get_playlist_tracks(playlist_id)
+        self.assertEqual([item["title"] for item in tracks], ["Tagged title", "Offline song"])
+        self.assertEqual(tracks[0]["artist"], "Tagged artist")
+        self.assertEqual(tracks[1]["path"], "/external/missing-song.mp3")
+
+        self.database.remove_from_playlist(playlist_id, 0)
+        remaining = self.database.get_playlist_tracks(playlist_id)
+        self.assertEqual(len(remaining), 1)
+        self.assertEqual(remaining[0]["title"], "Offline song")
+        self.assertEqual(remaining[0]["playlist_position"], 0)
+
+        self.database.delete_playlist(playlist_id)
+        self.assertEqual(self.database.list_playlists(), [])
+
+
+
 if __name__ == "__main__":
     unittest.main()
