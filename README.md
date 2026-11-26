@@ -2,13 +2,15 @@
 
 Reproductor musical de escritorio para Windows y Linux, desarrollado con **Python + PyQt6**. Su identidad visual parte de N3mesis Launcher: superficies oscuras, bordes finos e iluminación cian.
 
-## Versión 0.4.0
+## Versión 0.4.1
 
 ### Biblioteca
 - Biblioteca local con canciones, álbumes, artistas, géneros, favoritos e historial.
 - Metadatos y carátulas incrustadas mediante Mutagen.
 - Caché de portadas en `~/.musicfy/covers`.
 - Búsqueda con retardo breve para no reconstruir la vista en cada pulsación.
+- Inicio con portada destacada basada en álbumes reales y carrusel de playlists.
+- Botón de reproducción al pasar el cursor por las carátulas.
 - Importación de archivos y carpetas mediante un hilo de trabajo; el análisis no bloquea la interfaz.
 - Inserción de la biblioteca en lotes SQLite y actualización de tabla con repintado suspendido.
 
