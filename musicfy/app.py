@@ -257,6 +257,8 @@ class ArtworkFrame(QFrame):
     def mousePressEvent(self, event: Any) -> None:
         if event.button() == Qt.MouseButton.LeftButton:
             self.clicked.emit()
+            event.accept()
+            return
         super().mousePressEvent(event)
 
 
