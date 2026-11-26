@@ -2,7 +2,12 @@
 
 Reproductor musical de escritorio desarrollado con **Python + PyQt6**, siguiendo la identidad visual AURORA de N3mesis Launcher.
 
-## Biblioteca premium (0.2.1)
+## Interfaz AURORA (0.3.1)
+
+- Tema inspirado en N3mesis Launcher: negro grafito, paneles oscuros, bordes finos y acento cian.
+- Iconografía vectorial pintada con Qt, consistente y sin depender de emojis ni de fuentes de símbolos instaladas en Windows.
+- Controles de navegación, importación y reproducción con iconos vectoriales.
+- Botón de reproducción, pausa, anterior y siguiente con iconos escalables.
 
 - Inicio editorial con ilustración MusicFy, métricas compactas, carrusel horizontal de álbumes y un estado vacío con acciones directas.
 - Vistas de canciones, álbumes, artistas y géneros.
