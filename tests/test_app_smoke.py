@@ -38,6 +38,7 @@ class MusicFyWindowSmokeTests(unittest.TestCase):
             {"home", "tracks", "albums", "artists", "genres", "favorites", "history"},
         )
         self.assertEqual(self.window.page_mode, "home")
+        self.assertTrue(self.window.nav_buttons["home"].isChecked())
         self.assertFalse(self.window.home_empty_card.isHidden())
         self.assertTrue(self.window.home_album_scroll.isHidden())
 
