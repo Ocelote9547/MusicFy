@@ -557,7 +557,7 @@ class MusicFyWindow(QMainWindow):
         side_layout.addWidget(self.import_playlist_button)
 
         side_layout.addStretch(1)
-        footer = QLabel("N3MESIS STUDIO\nMUSIC PLAYER  ·  0.5.0")
+        footer = QLabel("N3MESIS STUDIO\nMUSIC PLAYER  ·  0.6.0")
         footer.setObjectName("sidebar_note")
         side_layout.addWidget(footer)
         return sidebar
