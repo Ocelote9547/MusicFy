@@ -4,7 +4,7 @@ Reproductor musical de escritorio desarrollado con **Python + PyQt6**, siguiendo
 
 ## Biblioteca premium (0.2.0)
 
-- Inicio con resumen de la colección y álbumes recientes de la biblioteca.
+- Inicio con resumen de la colección y acceso visual a los álbumes de la biblioteca.
 - Vistas de canciones, álbumes, artistas y géneros.
 - Fichas visuales de álbumes con sus carátulas.
 - Extracción de portadas incrustadas en los archivos y búsqueda de imágenes de carpeta (`cover.jpg`, `folder.jpg`, `front.jpg`).
