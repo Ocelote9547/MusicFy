@@ -9,10 +9,9 @@ Reproductor musical de escritorio para Windows y Linux, desarrollado con **Pytho
 - Metadatos y carátulas incrustadas mediante Mutagen.
 - Caché de portadas en `~/.musicfy/covers`.
 - Búsqueda con retardo breve para no reconstruir la vista en cada pulsación.
-- Inicio con portada destacada basada en álbumes reales y carrusel de playlists.
+- Inicio con portada destacada basada en álbumes reales y carruseles de álbumes y playlists.
 - Botón de reproducción al pasar el cursor por las carátulas.
 - Importación de archivos y carpetas mediante un hilo de trabajo; el análisis no bloquea la interfaz.
-- Inicio con portada destacada tomada de la biblioteca, carrusel de álbumes y carrusel de playlists.
 - Inserción de la biblioteca en lotes SQLite y actualización de tabla con repintado suspendido.
 
 ### Reproductor
@@ -41,7 +40,7 @@ Las canciones añadidas desde una playlist se vinculan a la biblioteca cuando ex
 
 ## Requisitos
 - Python 3.10 o posterior.
-- PyQt6 con Qt Multimedia.
+- PyQt6 6.8 o posterior con Qt Multimedia.
 - Mutagen.
 - yt-dlp para resolver las URLs online compatibles.
 
@@ -56,10 +55,11 @@ python -m pip install -r requirements.txt
 python main.py
 ```
 
-Para actualizar una copia ya clonada:
+Para actualizar una copia ya clonada (incluida la dependencia Qt 6.8+ del visualizador):
 
 ```powershell
 git pull origin main
+python -m pip install -r requirements.txt --upgrade
 python main.py
 ```
 
@@ -73,6 +73,12 @@ source .venv/bin/activate
 python -m pip install -r requirements.txt
 python main.py
 ```
+
+## Módulos principales
+- `musicfy/app.py`: ventana, biblioteca, navegación y conexiones del reproductor.
+- `musicfy/player_widgets.py`: visualizador espectral PCM y pantalla de reproducción ampliada.
+- `musicfy/playlists.py`: importación y exportación M3U/M3U8.
+- `musicfy/library.py`: lectura de metadatos y escaneo en segundo plano.
 
 ## Datos locales
 La base de datos se almacena en `~/.musicfy/library.sqlite3`. Las carátulas en caché se guardan en `~/.musicfy/covers`. Las playlists se conservan en SQLite; los archivos M3U importados y exportados siguen siendo archivos independientes.
