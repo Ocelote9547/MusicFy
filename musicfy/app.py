@@ -1190,6 +1190,7 @@ class MusicFyWindow(QMainWindow):
 
         for child in self.home_empty_card.findChildren(QPushButton):
             child.setVisible(not has_music)
+        self.home_page_scroll.verticalScrollBar().setValue(0)
 
     def play_collection_record(
         self,
