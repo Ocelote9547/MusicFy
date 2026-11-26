@@ -948,6 +948,14 @@ class MusicFyWindow(QMainWindow):
         self.queue_button.clicked.connect(self.show_queue)
         controls.addWidget(self.queue_button)
 
+        self.sleep_button = IconButton("history", icon_size=16)
+        self.sleep_button.setObjectName("controlButton")
+        self.sleep_button.setFixedSize(36, 36)
+        self.sleep_button.setCheckable(True)
+        self.sleep_button.setToolTip("Temporizador de apagado")
+        self.sleep_button.clicked.connect(self.open_sleep_timer)
+        controls.addWidget(self.sleep_button)
+
         self.full_player_button = IconButton("expand", icon_size=16)
         self.full_player_button.setObjectName("controlButton")
         self.full_player_button.setFixedSize(36, 36)
@@ -969,10 +977,15 @@ class MusicFyWindow(QMainWindow):
         self.volume_slider.setRange(0, 100)
         self.volume_slider.setValue(72)
         self.volume_slider.setFixedWidth(105)
-        self.volume_slider.valueChanged.connect(
-            lambda value: self.audio_output.setVolume(value / 100)
-        )
+        self.volume_slider.valueChanged.connect(self._set_master_volume)
         controls.addWidget(self.volume_slider)
+
+        self.replaygain_button = QPushButton("RG")
+        self.replaygain_button.setObjectName("replayGainButton")
+        self.replaygain_button.setCheckable(True)
+        self.replaygain_button.setToolTip("Normalizar volumen usando etiquetas ReplayGain")
+        self.replaygain_button.clicked.connect(self.toggle_replaygain)
+        controls.addWidget(self.replaygain_button)
         player_layout.addLayout(controls)
         return player_bar
 
@@ -1672,6 +1685,96 @@ class MusicFyWindow(QMainWindow):
         self.player.mediaStatusChanged.connect(self.handle_media_status)
         self.player.errorOccurred.connect(self.handle_player_error)
 
+    def _install_shortcuts(self) -> None:
+        shortcuts = [
+            ("Space", self._shortcut_toggle_playback),
+            ("Ctrl+F", self._focus_search),
+            ("Ctrl+O", self.add_audio_files),
+            ("Ctrl+L", self.open_now_playing),
+            ("Ctrl+J", self.show_queue),
+            ("Ctrl+Shift+S", self.open_sleep_timer),
+        ]
+        self._shortcuts: list[QShortcut] = []
+        for sequence, callback in shortcuts:
+            shortcut = QShortcut(QKeySequence(sequence), self)
+            shortcut.setContext(Qt.ShortcutContext.WindowShortcut)
+            shortcut.activated.connect(callback)
+            self._shortcuts.append(shortcut)
+
+    def _shortcut_toggle_playback(self) -> None:
+        if isinstance(self.focusWidget(), QLineEdit):
+            return
+        self.toggle_playback()
+
+    def _focus_search(self) -> None:
+        self.search_box.setFocus()
+        self.search_box.selectAll()
+
+    def open_sleep_timer(self, _checked: bool = False) -> None:
+        minutes, accepted = QInputDialog.getInt(
+            self,
+            "Temporizador de apagado",
+            "Detener la reproducción dentro de cuántos minutos? (0 para desactivar):",
+            30,
+            0,
+            360,
+            5,
+        )
+        if not accepted:
+            return
+        if minutes == 0:
+            self.sleep_timer.stop()
+            self.sleep_button.setChecked(False)
+            self.sleep_button.set_icon_color("#aab6c4")
+            self.sleep_button.setToolTip("Temporizador desactivado")
+            self.statusBar().showMessage("Temporizador desactivado.", 3000)
+            return
+        self.sleep_timer.start(minutes * 60 * 1000)
+        self.sleep_button.setChecked(True)
+        self.sleep_button.set_icon_color("#12b8ee")
+        self.sleep_button.setToolTip(f"La música se detendrá en {minutes} minutos")
+        self.statusBar().showMessage(
+            f"Temporizador activado: {minutes} minutos.", 5000
+        )
+
+    def _sleep_timer_expired(self) -> None:
+        self.player.stop()
+        self.sleep_button.setChecked(False)
+        self.sleep_button.set_icon_color("#aab6c4")
+        self.sleep_button.setToolTip("Temporizador desactivado")
+        self.statusBar().showMessage("Temporizador: reproducción detenida.", 6000)
+
+    def toggle_replaygain(self, checked: bool) -> None:
+        self.replaygain_enabled = bool(checked)
+        self._apply_output_volume()
+        self.replaygain_button.setToolTip(
+            "ReplayGain activado" if checked else "ReplayGain desactivado"
+        )
+        self.statusBar().showMessage(
+            "Normalización ReplayGain activada."
+            if checked else "Normalización ReplayGain desactivada.",
+            3500,
+        )
+
+    def _set_master_volume(self, value: int) -> None:
+        self.master_volume = max(0, min(100, int(value))) / 100.0
+        self._apply_output_volume()
+
+    def _apply_output_volume(self) -> None:
+        track_gain = 1.0
+        if self.replaygain_enabled and self.current_track is not None:
+            tag = str(self.current_track.get("replaygain_track_gain") or "")
+            match = re.search(r"[-+]?(?:\\d+\\.?\\d*|\\.\\d+)", tag)
+            if match:
+                try:
+                    decibels = float(match.group(0))
+                    track_gain = 10.0 ** (decibels / 20.0)
+                except (ValueError, OverflowError):
+                    track_gain = 1.0
+        self.audio_output.setVolume(
+            max(0.0, min(1.0, self.master_volume * track_gain))
+        )
+
     def _handle_audio_buffer(self, buffer: Any) -> None:
         try:
             levels = audio_buffer_levels(buffer)
@@ -1708,7 +1811,9 @@ class MusicFyWindow(QMainWindow):
         title = str(track.get("title") or "Reproducción")
         artist = str(track.get("artist") or "Artista desconocido")
         cover = self._cover_pixmap(track.get("cover_path"), title)
-        self.now_playing_dialog.set_track(title, artist, cover)
+        self.now_playing_dialog.set_track(
+            title, artist, cover, str(track.get("lyrics") or "")
+        )
         self.now_playing_dialog.update_position(self.player.position())
         self.now_playing_dialog.update_duration(self.player.duration())
         self.now_playing_dialog.set_playing(
@@ -1727,6 +1832,7 @@ class MusicFyWindow(QMainWindow):
 
     def play_track(self, track: dict[str, Any]) -> None:
         self.current_track = track
+        self._apply_output_volume()
         title = str(track.get("title") or "Reproducción")
         artist = str(track.get("artist") or "Artista desconocido")
         self.now_title.setText(title)
@@ -1746,7 +1852,9 @@ class MusicFyWindow(QMainWindow):
         self.cover_placeholder.setText("")
         self.mini_visualizer.set_playing(True)
         if self.now_playing_dialog is not None:
-            self.now_playing_dialog.set_track(title, artist, cover)
+            self.now_playing_dialog.set_track(
+                title, artist, cover, str(track.get("lyrics") or "")
+            )
 
         if track.get("url"):
             source = QUrl(str(track["url"]))
