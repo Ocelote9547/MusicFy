@@ -19,10 +19,15 @@ from PyQt6.QtGui import (
     QPixmap,
 )
 from PyQt6.QtMultimedia import QAudioOutput, QMediaPlayer
+try:
+    from PyQt6.QtMultimedia import QAudioBufferOutput
+except ImportError:  # pragma: no cover - Qt < 6.8
+    QAudioBufferOutput = None  # type: ignore[assignment, misc]
 from PyQt6.QtWidgets import (
     QFileDialog,
     QDialog,
     QDialogButtonBox,
+    QAbstractItemView,
     QFrame,
     QGridLayout,
     QHBoxLayout,
@@ -50,6 +55,7 @@ from musicfy.database import MusicDatabase
 from musicfy.library import LibraryImportWorker
 from musicfy.online import OnlineResolver
 from musicfy.playlists import parse_m3u, write_m3u
+from musicfy.player_widgets import NowPlayingDialog, SpectrumWidget, audio_buffer_levels
 
 
 def draw_vector_icon(painter: QPainter, name: str, color: str, size: int) -> None:
@@ -365,6 +371,15 @@ class MusicFyWindow(QMainWindow):
         self.audio_output = QAudioOutput(self)
         self.audio_output.setVolume(0.72)
         self.player.setAudioOutput(self.audio_output)
+        self.audio_buffer_output = None
+        if QAudioBufferOutput is not None:
+            try:
+                self.audio_buffer_output = QAudioBufferOutput(self)
+                self.player.setAudioBufferOutput(self.audio_buffer_output)
+                self.audio_buffer_output.audioBufferReceived.connect(self._handle_audio_buffer)
+            except (AttributeError, RuntimeError, TypeError):
+                self.audio_buffer_output = None
+        self.now_playing_dialog: NowPlayingDialog | None = None
 
         self.page_mode = "home"
         self.active_playlist_id: int | None = None
@@ -559,6 +574,7 @@ class MusicFyWindow(QMainWindow):
         scroll.setObjectName("homePageScroll")
         scroll.setWidgetResizable(True)
         scroll.setFrameShape(QFrame.Shape.NoFrame)
+        self.home_page_scroll = scroll
         page = QWidget()
         page.setObjectName("homePageContent")
         layout = QVBoxLayout(page)
@@ -568,10 +584,10 @@ class MusicFyWindow(QMainWindow):
         # Editorial hero: headline, useful action and custom MusicFy artwork.
         hero = QFrame()
         hero.setObjectName("heroBanner")
-        hero.setMinimumHeight(190)
-        hero.setMaximumHeight(196)
+        hero.setMinimumHeight(232)
+        hero.setMaximumHeight(244)
         hero_layout = QHBoxLayout(hero)
-        hero_layout.setContentsMargins(30, 22, 24, 22)
+        hero_layout.setContentsMargins(30, 24, 26, 24)
         hero_layout.setSpacing(12)
 
         copy = QVBoxLayout()
@@ -581,6 +597,7 @@ class MusicFyWindow(QMainWindow):
         copy.addWidget(hero_kicker)
 
         hero_title = QLabel("Tu música,\na tu manera.")
+        hero_title.setMinimumHeight(86)
         hero_title.setObjectName("heroTitle")
         copy.addWidget(hero_title)
 
@@ -605,12 +622,12 @@ class MusicFyWindow(QMainWindow):
 
         self.hero_artwork = QLabel()
         self.hero_artwork.setObjectName("heroArtwork")
-        self.hero_artwork.setFixedSize(168, 168)
+        self.hero_artwork.setFixedSize(188, 188)
         self.hero_artwork.setAlignment(Qt.AlignmentFlag.AlignCenter)
         self.hero_artwork.setPixmap(
             self._hero_artwork().scaled(
-                168,
-                168,
+                188,
+                188,
                 Qt.AspectRatioMode.KeepAspectRatioByExpanding,
                 Qt.TransformationMode.SmoothTransformation,
             )
@@ -908,6 +925,17 @@ class MusicFyWindow(QMainWindow):
         self.queue_button.clicked.connect(self.show_queue)
         controls.addWidget(self.queue_button)
 
+        self.full_player_button = IconButton("expand", icon_size=16)
+        self.full_player_button.setObjectName("controlButton")
+        self.full_player_button.setFixedSize(36, 36)
+        self.full_player_button.setToolTip("Abrir pantalla de reproducción")
+        self.full_player_button.clicked.connect(self.open_now_playing)
+        controls.addWidget(self.full_player_button)
+
+        self.mini_visualizer = SpectrumWidget(bars=18)
+        self.mini_visualizer.setFixedSize(136, 40)
+        controls.addWidget(self.mini_visualizer)
+
         controls.addStretch(1)
 
         volume_label = QLabel("VOL")
@@ -985,6 +1013,8 @@ class MusicFyWindow(QMainWindow):
         self.page_title.setText(title)
         self.page_subtitle.setText(subtitle)
         self.content_stack.setCurrentIndex(stack_index)
+        if mode == "home":
+            self.home_page_scroll.verticalScrollBar().setValue(0)
         self.refresh_content()
 
     def show_collection_detail(self, kind: str, record: dict[str, Any]) -> None:
@@ -1104,7 +1134,7 @@ class MusicFyWindow(QMainWindow):
             artist = str(featured.get("artist") or "Artista desconocido")
             cover = self._cover_pixmap(featured.get("cover_path"), title)
             self.hero_artwork.setPixmap(cover.scaled(
-                168, 168,
+                188, 188,
                 Qt.AspectRatioMode.KeepAspectRatioByExpanding,
                 Qt.TransformationMode.SmoothTransformation,
             ))
@@ -1115,7 +1145,7 @@ class MusicFyWindow(QMainWindow):
             self.hero_action_button.setEnabled(True)
         else:
             self.hero_artwork.setPixmap(self._hero_artwork().scaled(
-                168, 168,
+                188, 188,
                 Qt.AspectRatioMode.KeepAspectRatioByExpanding,
                 Qt.TransformationMode.SmoothTransformation,
             ))
@@ -1612,6 +1642,52 @@ class MusicFyWindow(QMainWindow):
         self.player.mediaStatusChanged.connect(self.handle_media_status)
         self.player.errorOccurred.connect(self.handle_player_error)
 
+    def _handle_audio_buffer(self, buffer: Any) -> None:
+        try:
+            levels = audio_buffer_levels(buffer)
+        except (AttributeError, TypeError, ValueError, OverflowError):
+            return
+        if hasattr(self, "mini_visualizer"):
+            self.mini_visualizer.set_levels(levels)
+        if self.now_playing_dialog is not None and self.now_playing_dialog.isVisible():
+            self.now_playing_dialog.set_levels(levels)
+
+    def open_now_playing(self) -> None:
+        if self.current_track is None:
+            QMessageBox.information(
+                self, "Reproductor",
+                "Reproduce una canción para abrir la pantalla de reproducción."
+            )
+            return
+        if self.now_playing_dialog is None:
+            dialog = NowPlayingDialog(self)
+            dialog.previousRequested.connect(lambda: self.skip_track(-1))
+            dialog.playPauseRequested.connect(self.toggle_playback)
+            dialog.nextRequested.connect(lambda: self.skip_track(1))
+            dialog.position_slider.sliderMoved.connect(self.player.setPosition)
+            self.player.positionChanged.connect(dialog.update_position)
+            self.player.durationChanged.connect(dialog.update_duration)
+            self.player.playbackStateChanged.connect(
+                lambda state: dialog.set_playing(
+                    state == QMediaPlayer.PlaybackState.PlayingState
+                )
+            )
+            self.now_playing_dialog = dialog
+
+        track = self.current_track
+        title = str(track.get("title") or "Reproducción")
+        artist = str(track.get("artist") or "Artista desconocido")
+        cover = self._cover_pixmap(track.get("cover_path"), title)
+        self.now_playing_dialog.set_track(title, artist, cover)
+        self.now_playing_dialog.update_position(self.player.position())
+        self.now_playing_dialog.update_duration(self.player.duration())
+        self.now_playing_dialog.set_playing(
+            self.player.playbackState() == QMediaPlayer.PlaybackState.PlayingState
+        )
+        self.now_playing_dialog.show()
+        self.now_playing_dialog.raise_()
+        self.now_playing_dialog.activateWindow()
+
     def play_selected_row(self, row: int, _column: int = 0) -> None:
         if not (0 <= row < len(self.visible_tracks)):
             return
@@ -1638,6 +1714,9 @@ class MusicFyWindow(QMainWindow):
             Qt.TransformationMode.SmoothTransformation,
         ))
         self.cover_placeholder.setText("")
+        self.mini_visualizer.set_playing(True)
+        if self.now_playing_dialog is not None:
+            self.now_playing_dialog.set_track(title, artist, cover)
 
         if track.get("url"):
             source = QUrl(str(track["url"]))
@@ -1755,9 +1834,11 @@ class MusicFyWindow(QMainWindow):
             self.player.stop()
 
     def update_play_button(self, state: QMediaPlayer.PlaybackState) -> None:
-        self.play_button.set_icon(
-            "pause" if state == QMediaPlayer.PlaybackState.PlayingState else "play"
-        )
+        playing = state == QMediaPlayer.PlaybackState.PlayingState
+        self.play_button.set_icon("pause" if playing else "play")
+        self.mini_visualizer.set_playing(playing)
+        if self.now_playing_dialog is not None:
+            self.now_playing_dialog.set_playing(playing)
 
     def update_position(self, position: int) -> None:
         if not self.position_slider.isSliderDown():
