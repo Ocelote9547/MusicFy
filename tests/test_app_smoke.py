@@ -58,6 +58,24 @@ class MusicFyWindowSmokeTests(unittest.TestCase):
 
 
 
+    def test_playlist_detail_exposes_m3u_actions(self) -> None:
+        playlist_id = self.window.database.create_playlist("Test list")
+        self.window.database.save_playlist_tracks(
+            playlist_id,
+            [{"path": "/music/test.mp3", "title": "Test song", "artist": "Test artist"}],
+        )
+        playlist = self.window.database.get_playlist(playlist_id)
+        self.window.show_page("playlists")
+        self.window.show_playlist_detail(playlist)
+
+        self.assertEqual(self.window.page_mode, "playlist_detail")
+        self.assertEqual(self.window.active_playlist_id, playlist_id)
+        self.assertFalse(self.window.export_playlist_button.isHidden())
+        self.assertFalse(self.window.delete_playlist_button.isHidden())
+        self.assertEqual(len(self.window.visible_tracks), 1)
+
+
+
     def test_vector_icon_set_paints_without_system_glyph_fonts(self) -> None:
         icon_names = (
             "home", "tracks", "albums", "artist", "genres", "star",
