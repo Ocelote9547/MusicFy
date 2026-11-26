@@ -5,7 +5,7 @@ from functools import partial
 from pathlib import Path
 from typing import Any
 
-from PyQt6.QtCore import Qt, QUrl, pyqtSignal
+from PyQt6.QtCore import Qt, QUrl, pyqtSignal, QRectF, QLineF
 from PyQt6.QtGui import (
     QAction,
     QColor,
@@ -65,24 +65,24 @@ def draw_vector_icon(painter: QPainter, name: str, color: str, size: int) -> Non
         path.lineTo(18.5, 21); path.lineTo(18.5, 9.5)
         painter.drawPath(path)
     elif name == "tracks":
-        painter.drawRoundedRect(4, 3, 16, 18, 2, 2)
+        painter.drawRoundedRect(QRectF(4, 3, 16, 18, 2, 2), 2.0, 2.0)
         for y, end in ((8, 16), (12, 16), (16, 14)):
-            painter.drawLine(8, y, end, y)
-            painter.drawEllipse(6, y - .5, 1, 1)
+            painter.drawLine(QLineF(8, y, end, y))
+            painter.drawEllipse(QRectF(6, y - .5, 1, 1))
     elif name == "albums":
-        painter.drawRoundedRect(3, 3, 18, 18, 3, 3)
-        painter.drawEllipse(7, 7, 10, 10)
-        painter.drawEllipse(10.5, 10.5, 3, 3)
+        painter.drawRoundedRect(QRectF(3, 3, 18, 18, 3, 3), 2.0, 2.0)
+        painter.drawEllipse(QRectF(7, 7, 10, 10))
+        painter.drawEllipse(QRectF(10.5, 10.5, 3, 3))
     elif name == "artist":
-        painter.drawEllipse(8, 3, 8, 8)
+        painter.drawEllipse(QRectF(8, 3, 8, 8))
         path.moveTo(4, 21); path.cubicTo(4.5, 16.5, 7, 14.5, 12, 14.5)
         path.cubicTo(17, 14.5, 19.5, 16.5, 20, 21)
         painter.drawPath(path)
     elif name == "genres":
         for y, knob_x in ((6, 8), (12, 16), (18, 10)):
-            painter.drawLine(3, y, 21, y)
+            painter.drawLine(QLineF(3, y, 21, y))
             painter.setBrush(QColor("#0d1117"))
-            painter.drawEllipse(knob_x - 2, y - 2, 4, 4)
+            painter.drawEllipse(QRectF(knob_x - 2, y - 2, 4, 4))
             painter.setBrush(Qt.BrushStyle.NoBrush)
     elif name == "star":
         points = [(12, 2.5), (14.8, 8.5), (21.3, 9.3), (16.5, 13.8),
@@ -93,11 +93,11 @@ def draw_vector_icon(painter: QPainter, name: str, color: str, size: int) -> Non
         path.closeSubpath()
         painter.drawPath(path)
     elif name == "history":
-        painter.drawEllipse(3, 3, 18, 18)
-        painter.drawLine(12, 6.5, 12, 12); painter.drawLine(12, 12, 16, 14.5)
-        painter.drawLine(3.5, 7, 3.5, 3.5); painter.drawLine(3.5, 3.5, 7, 3.5)
+        painter.drawEllipse(QRectF(3, 3, 18, 18))
+        painter.drawLine(QLineF(12, 6.5, 12, 12)); painter.drawLine(QLineF(12, 12, 16, 14.5))
+        painter.drawLine(QLineF(3.5, 7, 3.5, 3.5)); painter.drawLine(QLineF(3.5, 3.5, 7, 3.5))
     elif name == "plus":
-        painter.drawLine(12, 4, 12, 20); painter.drawLine(4, 12, 20, 12)
+        painter.drawLine(QLineF(12, 4, 12, 20)); painter.drawLine(QLineF(4, 12, 20, 12))
     elif name == "folder":
         path.moveTo(2.5, 7); path.lineTo(2.5, 19)
         path.quadTo(2.5, 21, 4.5, 21); path.lineTo(19.5, 21)
@@ -107,36 +107,36 @@ def draw_vector_icon(painter: QPainter, name: str, color: str, size: int) -> Non
         path.quadTo(2.5, 4, 2.5, 6); path.closeSubpath()
         painter.drawPath(path)
     elif name == "globe":
-        painter.drawEllipse(3, 3, 18, 18); painter.drawEllipse(8, 3, 8, 18)
-        painter.drawLine(4, 9, 20, 9); painter.drawLine(4, 15, 20, 15)
+        painter.drawEllipse(QRectF(3, 3, 18, 18)); painter.drawEllipse(QRectF(8, 3, 8, 18))
+        painter.drawLine(QLineF(4, 9, 20, 9)); painter.drawLine(QLineF(4, 15, 20, 15))
     elif name == "arrow-right":
-        painter.drawLine(4, 12, 20, 12); painter.drawLine(14, 6, 20, 12)
-        painter.drawLine(14, 18, 20, 12)
+        painter.drawLine(QLineF(4, 12, 20, 12)); painter.drawLine(QLineF(14, 6, 20, 12))
+        painter.drawLine(QLineF(14, 18, 20, 12))
     elif name == "arrow-left":
-        painter.drawLine(20, 12, 4, 12); painter.drawLine(10, 6, 4, 12)
-        painter.drawLine(10, 18, 4, 12)
+        painter.drawLine(QLineF(20, 12, 4, 12)); painter.drawLine(QLineF(10, 6, 4, 12))
+        painter.drawLine(QLineF(10, 18, 4, 12))
     elif name == "search":
-        painter.drawEllipse(3, 3, 13, 13); painter.drawLine(15, 15, 21, 21)
+        painter.drawEllipse(QRectF(3, 3, 13, 13)); painter.drawLine(QLineF(15, 15, 21, 21))
     elif name == "music-note":
         path.moveTo(15, 4); path.lineTo(15, 16); path.moveTo(15, 5)
         path.lineTo(21, 3.5); path.lineTo(21, 15)
         painter.drawPath(path); painter.setBrush(QColor(color))
-        painter.drawEllipse(9, 14.5, 6, 5); painter.drawEllipse(15, 13.5, 6, 5)
+        painter.drawEllipse(QRectF(9, 14.5, 6, 5)); painter.drawEllipse(QRectF(15, 13.5, 6, 5))
     elif name == "play":
         path.moveTo(7, 4); path.lineTo(20, 12); path.lineTo(7, 20); path.closeSubpath()
         painter.setBrush(QColor(color)); painter.drawPath(path)
     elif name == "pause":
         painter.setBrush(QColor(color)); painter.setPen(Qt.PenStyle.NoPen)
-        painter.drawRoundedRect(6, 4, 4.5, 16, 1, 1)
-        painter.drawRoundedRect(13.5, 4, 4.5, 16, 1, 1)
+        painter.drawRoundedRect(QRectF(6, 4, 4.5, 16, 1, 1), 2.0, 2.0)
+        painter.drawRoundedRect(QRectF(13.5, 4, 4.5, 16, 1, 1), 2.0, 2.0)
     elif name == "previous":
         painter.setBrush(QColor(color)); painter.setPen(Qt.PenStyle.NoPen)
         path.moveTo(19, 5); path.lineTo(8, 12); path.lineTo(19, 19); path.closeSubpath()
-        painter.drawPath(path); painter.drawRoundedRect(4, 5, 2.2, 14, 1, 1)
+        painter.drawPath(path); painter.drawRoundedRect(QRectF(4, 5, 2.2, 14, 1, 1), 2.0, 2.0)
     elif name == "next":
         painter.setBrush(QColor(color)); painter.setPen(Qt.PenStyle.NoPen)
         path.moveTo(5, 5); path.lineTo(16, 12); path.lineTo(5, 19); path.closeSubpath()
-        painter.drawPath(path); painter.drawRoundedRect(18, 5, 2.2, 14, 1, 1)
+        painter.drawPath(path); painter.drawRoundedRect(QRectF(18, 5, 2.2, 14, 1, 1), 2.0, 2.0)
 
     painter.restore()
 
