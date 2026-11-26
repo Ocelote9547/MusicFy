@@ -4,7 +4,7 @@ import math
 import struct
 from typing import Any
 
-from PyQt6.QtCore import Qt, QTimer, pyqtSignal
+from PyQt6.QtCore import Qt, QTimer, pyqtSignal, QRectF
 from PyQt6.QtGui import QColor, QLinearGradient, QPainter, QPen, QPixmap
 from PyQt6.QtWidgets import (
     QDialog,
@@ -99,8 +99,8 @@ class SpectrumWidget(QWidget):
 
     def __init__(self, parent: QWidget | None = None, bars: int = 24) -> None:
         super().__init__(parent)
-        self.setMinimumHeight(54)
-        self.setMinimumWidth(180)
+        self.setMinimumHeight(32)
+        self.setMinimumWidth(100)
         self.setAttribute(Qt.WidgetAttribute.WA_OpaquePaintEvent, False)
         self._levels = [0.035] * bars
         self._playing = False
@@ -155,9 +155,7 @@ class SpectrumWidget(QWidget):
             painter.setPen(Qt.PenStyle.NoPen)
             painter.setBrush(gradient)
             painter.drawRoundedRect(
-                __import__("PyQt6.QtCore", fromlist=["QRectF"]).QRectF(
-                    x, y, bar_width, bar_height
-                ),
+                QRectF(x, y, bar_width, bar_height),
                 bar_width / 2,
                 bar_width / 2,
             )
