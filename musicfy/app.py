@@ -1909,7 +1909,7 @@ class MusicFyWindow(QMainWindow):
         else:
             source = QUrl.fromLocalFile(str(track["path"]))
             self.database.mark_played(str(track["path"]))
-            if self.page_mode == "history":
+            if self.page_mode in ("home", "history", "most_played"):
                 self.refresh_content()
 
         self.player.setSource(source)
