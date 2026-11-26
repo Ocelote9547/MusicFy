@@ -170,7 +170,7 @@ class MusicFyWindow(QMainWindow):
         action_row = QHBoxLayout()
         self.search_box = QLineEdit()
         self.search_box.setObjectName("searchBox")
-        self.search_box.setPlaceholderText("⌕   Busca canciones, álbumes, artistas o géneros...")
+        self.search_box.setPlaceholderText("⌕   Busca dentro de esta sección...")
         self.search_box.setClearButtonEnabled(True)
         self.search_box.textChanged.connect(self.refresh_content)
         action_row.addWidget(self.search_box, 1)
