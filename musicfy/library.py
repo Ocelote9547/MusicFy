@@ -46,6 +46,19 @@ def read_audio_file(file_path: str | Path) -> dict[str, Any] | None:
                 or _first_tag(tags, "unsynced_lyrics")
                 or ""
             )
+            if not lyrics:
+                raw_tags = getattr(audio, "tags", None)
+                if raw_tags is not None:
+                    for key in raw_tags.keys():
+                        key_name = str(key).upper()
+                        if key_name.startswith(("USLT", "SYLT", "LYRICS")):
+                            value = raw_tags.get(key)
+                            text = getattr(value, "text", value)
+                            if isinstance(text, bytes):
+                                text = text.decode("utf-8", errors="replace")
+                            if text:
+                                lyrics = str(text).strip()
+                                break
             replaygain_track_gain = _first_tag(tags, "replaygain_track_gain") or ""
             info = getattr(audio, "info", None)
             duration = float(getattr(info, "length", 0.0) or 0.0)
