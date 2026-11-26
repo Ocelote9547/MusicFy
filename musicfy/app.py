@@ -1043,9 +1043,6 @@ class MusicFyWindow(QMainWindow):
             self.hero_action_button.set_label_text("Explorar canciones")
             self.hero_action_button.set_icon("arrow-right")
             self.hero_action_button.setEnabled(has_music)
-            if not has_music:
-                self.hero_action_button.clicked.disconnect()
-                self.hero_action_button.clicked.connect(lambda: self.show_page("tracks"))
 
         self.home_section_header.setVisible(has_albums)
         self.home_album_scroll.setVisible(has_albums)
