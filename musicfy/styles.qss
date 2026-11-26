@@ -8,7 +8,7 @@ QMainWindow#musicFyWindow {
 QWidget {
     background: transparent;
     color: #f4f6f8;
-    font-family: "Inter", "Segoe UI", Arial, sans-serif;
+    font-family: "Segoe UI Variable", "Segoe UI", Arial, sans-serif;
     font-size: 13px;
 }
 QLabel {
@@ -545,4 +545,67 @@ QListWidget#queueList::item {
 QListWidget#queueList::item:selected {
     color: #f4f8fb;
     background: rgba(18,174,233,.18);
+}
+
+
+/* Home experience refinements */
+QScrollArea#homePageScroll,
+QScrollArea#homePageScroll QWidget {
+    background: transparent;
+    border: none;
+}
+QFrame#heroBanner {
+    background: qlineargradient(x1:0,y1:0,x2:1,y2:1,
+        stop:0 #14232d, stop:.55 #10171e, stop:1 #0b1015);
+    border: 1px solid #28343c;
+    border-radius: 18px;
+}
+QLabel#heroArtwork {
+    background: #10232e;
+    border: 1px solid #244a5d;
+    border-radius: 14px;
+}
+QLabel#heroTitle {
+    font-size: 32px;
+    letter-spacing: -1.2px;
+}
+QLabel#heroText {
+    color: #b8c3ce;
+    font-size: 12px;
+    font-weight: 550;
+}
+QFrame#statCard {
+    background: #0f1216;
+    border: 1px solid #252c33;
+    border-radius: 12px;
+}
+QFrame#statCard:hover {
+    background: #151b21;
+    border-color: #315366;
+}
+QLabel#statValue {
+    font-size: 21px;
+}
+QFrame#collectionCard {
+    background: transparent;
+    border: 1px solid transparent;
+    border-radius: 13px;
+}
+QFrame#collectionCard:hover {
+    background: #12171d;
+    border: 1px solid #27343e;
+}
+QLabel#collectionCover {
+    background: #161c23;
+    border: 1px solid #2a3037;
+    border-radius: 11px;
+}
+QLabel#collectionTitle {
+    color: #f0f3f6;
+    font-size: 12px;
+    font-weight: 750;
+}
+QLabel#collectionSubtitle {
+    color: #8d9aa8;
+    font-size: 10px;
 }
