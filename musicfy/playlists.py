@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import os
 from pathlib import Path
 from typing import Any
 
@@ -104,7 +105,7 @@ def write_m3u(
             m3u_path = audio_path.relative_to(target.parent)
         except ValueError:
             try:
-                m3u_path = Path(__import__("os").path.relpath(audio_path, target.parent))
+                m3u_path = Path(os.path.relpath(audio_path, target.parent))
             except ValueError:
                 m3u_path = audio_path
 
