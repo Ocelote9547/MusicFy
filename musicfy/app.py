@@ -925,6 +925,11 @@ class MusicFyWindow(QMainWindow):
         self.active_collection = None
         self.active_playlist_id = int(record["id"])
         self.page_mode = "playlist_detail"
+        for key, button in self.nav_buttons.items():
+            selected = key == "playlists"
+            button.setChecked(selected)
+            button.set_icon_color("#101820" if selected else "#aab6c4")
+            button.set_label_color("#101820" if selected else "#aab6c4")
         self.content_stack.setCurrentIndex(1)
         self.back_button.show()
         self.export_playlist_button.show()
@@ -1645,7 +1650,7 @@ class MusicFyWindow(QMainWindow):
     def add_track_to_playlist(self, playlist_id: int, track: dict[str, Any]) -> None:
         self.database.add_to_playlist(playlist_id, track)
         self.statusBar().showMessage("Canción añadida a la playlist.", 4000)
-        if self.page_mode == "playlists":
+        if self.page_mode in ("playlists", "playlist_detail"):
             self.refresh_content()
 
     def remove_track_from_active_playlist(self, position: int) -> None:
