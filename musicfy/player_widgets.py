@@ -14,6 +14,7 @@ from PyQt6.QtWidgets import (
     QSlider,
     QScrollArea,
     QStackedWidget,
+    QFrame,
     QVBoxLayout,
     QWidget,
 )
@@ -258,7 +259,7 @@ class NowPlayingDialog(QDialog):
         lyrics_page_layout.addWidget(lyrics_heading)
         lyrics_scroll = QScrollArea()
         lyrics_scroll.setWidgetResizable(True)
-        lyrics_scroll.setFrameShape(QScrollArea.Shape.NoFrame)
+        lyrics_scroll.setFrameShape(QFrame.Shape.NoFrame)
         self.lyrics_label = QLabel(
             "Las letras incrustadas en el archivo aparecerán aquí."
         )
