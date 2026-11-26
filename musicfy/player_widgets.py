@@ -12,6 +12,8 @@ from PyQt6.QtWidgets import (
     QLabel,
     QPushButton,
     QSlider,
+    QScrollArea,
+    QStackedWidget,
     QVBoxLayout,
     QWidget,
 )
@@ -200,6 +202,17 @@ class NowPlayingDialog(QDialog):
         brand.setObjectName("eyebrow")
         top.addWidget(brand)
         top.addStretch(1)
+        self.artwork_tab = QPushButton("REPRODUCCIÓN")
+        self.artwork_tab.setObjectName("playerTab")
+        self.artwork_tab.setCheckable(True)
+        self.artwork_tab.setChecked(True)
+        self.artwork_tab.clicked.connect(lambda: self.content_stack.setCurrentIndex(0))
+        top.addWidget(self.artwork_tab)
+        self.lyrics_tab = QPushButton("LETRAS")
+        self.lyrics_tab.setObjectName("playerTab")
+        self.lyrics_tab.setCheckable(True)
+        self.lyrics_tab.clicked.connect(lambda: self.content_stack.setCurrentIndex(1))
+        top.addWidget(self.lyrics_tab)
         close_button = QPushButton("Cerrar")
         close_button.setObjectName("secondaryButton")
         close_button.clicked.connect(self.close)
@@ -230,7 +243,37 @@ class NowPlayingDialog(QDialog):
         detail.addWidget(self.artist_label)
         detail.addStretch(1)
         content.addLayout(detail, 1)
-        root.addLayout(content, 1)
+
+        artwork_page = QWidget()
+        artwork_page_layout = QHBoxLayout(artwork_page)
+        artwork_page_layout.setContentsMargins(0, 0, 0, 0)
+        artwork_page_layout.addLayout(content)
+
+        lyrics_page = QWidget()
+        lyrics_page_layout = QVBoxLayout(lyrics_page)
+        lyrics_page_layout.setContentsMargins(18, 12, 18, 12)
+        lyrics_page_layout.setSpacing(10)
+        lyrics_heading = QLabel("LETRAS DE LA CANCIÓN")
+        lyrics_heading.setObjectName("eyebrow")
+        lyrics_page_layout.addWidget(lyrics_heading)
+        lyrics_scroll = QScrollArea()
+        lyrics_scroll.setWidgetResizable(True)
+        lyrics_scroll.setFrameShape(QScrollArea.Shape.NoFrame)
+        self.lyrics_label = QLabel(
+            "Las letras incrustadas en el archivo aparecerán aquí."
+        )
+        self.lyrics_label.setObjectName("lyricsText")
+        self.lyrics_label.setAlignment(Qt.AlignmentFlag.AlignHCenter | Qt.AlignmentFlag.AlignTop)
+        self.lyrics_label.setWordWrap(True)
+        self.lyrics_label.setTextInteractionFlags(Qt.TextInteractionFlag.TextSelectableByMouse)
+        lyrics_scroll.setWidget(self.lyrics_label)
+        lyrics_page_layout.addWidget(lyrics_scroll, 1)
+
+        self.content_stack = QStackedWidget()
+        self.content_stack.addWidget(artwork_page)
+        self.content_stack.addWidget(lyrics_page)
+        self.content_stack.currentChanged.connect(self._update_tabs)
+        root.addWidget(self.content_stack, 1)
 
         section_header = QHBoxLayout()
         section_title = QLabel("ESPECTRO EN TIEMPO REAL")
@@ -276,9 +319,16 @@ class NowPlayingDialog(QDialog):
         controls.addStretch(1)
         root.addLayout(controls)
 
-    def set_track(self, title: str, artist: str, cover: QPixmap) -> None:
+    def set_track(
+        self,
+        title: str,
+        artist: str,
+        cover: QPixmap,
+        lyrics: str = "",
+    ) -> None:
         self.title_label.setText(title)
         self.artist_label.setText(artist)
+        self.set_lyrics(lyrics)
         self.cover.setPixmap(
             cover.scaled(
                 330,
@@ -287,6 +337,20 @@ class NowPlayingDialog(QDialog):
                 Qt.TransformationMode.SmoothTransformation,
             )
         )
+
+    def set_lyrics(self, lyrics: str) -> None:
+        clean_lyrics = str(lyrics or "").strip()
+        if clean_lyrics:
+            self.lyrics_label.setText(clean_lyrics)
+        else:
+            self.lyrics_label.setText(
+                "Este archivo no contiene letras incrustadas.\n\n"
+                "Puedes añadirlas a los metadatos del archivo para verlas aquí."
+            )
+
+    def _update_tabs(self, index: int) -> None:
+        self.artwork_tab.setChecked(index == 0)
+        self.lyrics_tab.setChecked(index == 1)
 
     def set_levels(self, levels: list[float]) -> None:
         self.visualizer.set_levels(levels)
