@@ -50,6 +50,28 @@ class MusicFyWindowSmokeTests(unittest.TestCase):
         self.assertTrue(self.window.nav_buttons["albums"].isChecked())
 
 
+    def test_home_features_real_album_and_playlist_shelves(self) -> None:
+        self.window.database.save_track({
+            "path": str(self.home / "first-track.mp3"),
+            "title": "First track",
+            "artist": "Example Artist",
+            "album": "Blue Horizon",
+            "genre": "Electronic",
+            "duration": 180,
+        })
+        self.window.database.create_playlist("Night drive")
+        self.window.refresh_content()
+
+        self.assertEqual(
+            self.window.hero_text_label.text(),
+            "Blue Horizon  ·  Example Artist",
+        )
+        self.assertFalse(self.window.home_album_scroll.isHidden())
+        self.assertFalse(self.window.home_playlist_section.isHidden())
+        self.assertEqual(self.window.featured_album["album"], "Blue Horizon")
+
+
+
     def test_playlist_navigation_is_available(self) -> None:
         self.window.show_page("playlists")
         self.assertEqual(self.window.page_mode, "playlists")
