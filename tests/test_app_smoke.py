@@ -133,6 +133,27 @@ class MusicFyWindowSmokeTests(unittest.TestCase):
             [0, 1, 2],
         )
 
+    def test_shuffle_order_visits_each_queue_item_before_repeating(self) -> None:
+        self.window.queue = [
+            {"path": "/music/one.mp3", "title": "One"},
+            {"path": "/music/two.mp3", "title": "Two"},
+            {"path": "/music/three.mp3", "title": "Three"},
+            {"path": "/music/four.mp3", "title": "Four"},
+        ]
+        self.window.current_index = 2
+        self.window.shuffle_enabled = True
+        self.window._build_shuffle_order(2)
+
+        visited = [self.window.current_index]
+        while self.window._advance_shuffle(1, wrap=False):
+            visited.append(self.window.current_index)
+
+        self.assertEqual(len(visited), 4)
+        self.assertEqual(set(visited), {0, 1, 2, 3})
+        self.assertFalse(self.window._advance_shuffle(1, wrap=False))
+
+
+
     def test_expanded_player_dialog_receives_track_metadata(self) -> None:
         dialog = NowPlayingDialog(self.window)
         cover = QPixmap(48, 48)
