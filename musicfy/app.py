@@ -673,7 +673,36 @@ class MusicFyWindow(QMainWindow):
             card.setMinimumHeight(66)
             card.setMaximumHeight(70)
             stats.addWidget(card)
-        layout.addLayout(stats)
+        # Counts remain available to the UI for compact badges, but the home
+        # experience prioritizes listening shelves rather than dashboard metrics.
+
+        self.home_recent_section = QWidget()
+        recent_header = QHBoxLayout(self.home_recent_section)
+        recent_header.setContentsMargins(0, 0, 0, 0)
+        recent_title = QLabel("Escuchado recientemente")
+        recent_title.setObjectName("sectionTitle")
+        recent_header.addWidget(recent_title)
+        recent_header.addStretch(1)
+        recent_all = IconButton("arrow-right", "Ver historial")
+        recent_all.setObjectName("textButton")
+        recent_all.clicked.connect(lambda: self.show_page("history"))
+        recent_header.addWidget(recent_all)
+        layout.addWidget(self.home_recent_section)
+
+        self.home_recent_scroll = QScrollArea()
+        self.home_recent_scroll.setObjectName("homeAlbumScroll")
+        self.home_recent_scroll.setWidgetResizable(True)
+        self.home_recent_scroll.setFrameShape(QFrame.Shape.NoFrame)
+        self.home_recent_scroll.setMinimumHeight(288)
+        self.home_recent_scroll.setHorizontalScrollBarPolicy(Qt.ScrollBarPolicy.ScrollBarAsNeeded)
+        self.home_recent_scroll.setVerticalScrollBarPolicy(Qt.ScrollBarPolicy.ScrollBarAlwaysOff)
+        self.home_recent_area = QWidget()
+        self.home_recent_row = QHBoxLayout(self.home_recent_area)
+        self.home_recent_row.setContentsMargins(2, 2, 10, 10)
+        self.home_recent_row.setSpacing(14)
+        self.home_recent_row.setAlignment(Qt.AlignmentFlag.AlignLeft)
+        self.home_recent_scroll.setWidget(self.home_recent_area)
+        layout.addWidget(self.home_recent_scroll)
 
         self.home_section_header = QWidget()
         section_header = QHBoxLayout(self.home_section_header)
@@ -1147,6 +1176,35 @@ class MusicFyWindow(QMainWindow):
                 or query in str(item["artist"]).casefold()
             ]
 
+        history_tracks = self.database.list_tracks("history")
+        album_lookup = {
+            (str(item.get("album") or ""), str(item.get("artist") or "")): item
+            for item in albums
+        }
+        recent_records: list[dict[str, Any]] = []
+        recent_seen: set[tuple[str, str]] = set()
+        for track in history_tracks:
+            key = (
+                str(track.get("album") or ""),
+                str(track.get("artist") or ""),
+            )
+            if key in recent_seen or not key[0]:
+                continue
+            recent_seen.add(key)
+            record = album_lookup.get(key)
+            if record is not None:
+                recent_records.append(record)
+            if len(recent_records) >= 12:
+                break
+
+        self._clear_layout(self.home_recent_row)
+        for record in recent_records:
+            card = self._make_collection_card("album", record)
+            card.clicked.connect(partial(self.show_collection_detail, "album", record))
+            card.play_requested.connect(partial(self.play_collection_record, "album", record))
+            self.home_recent_row.addWidget(card)
+        self.home_recent_row.addStretch(1)
+
         self._clear_layout(self.home_album_row)
         for record in records[:12]:
             card = self._make_collection_card("album", record)
@@ -1200,6 +1258,8 @@ class MusicFyWindow(QMainWindow):
             self.hero_action_button.set_icon("arrow-right")
             self.hero_action_button.setEnabled(has_music)
 
+        self.home_recent_section.setVisible(bool(recent_records))
+        self.home_recent_scroll.setVisible(bool(recent_records))
         self.home_section_header.setVisible(has_albums)
         self.home_album_scroll.setVisible(has_albums)
         self.home_playlist_section.setVisible(bool(playlists))
