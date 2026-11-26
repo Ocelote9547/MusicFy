@@ -673,6 +673,16 @@ class MusicFyWindow(QMainWindow):
         self.back_button.hide()
         detail_row.addWidget(self.back_button)
         detail_row.addStretch(1)
+        self.export_playlist_button = IconButton("export", "Exportar M3U")
+        self.export_playlist_button.setObjectName("secondaryButton")
+        self.export_playlist_button.clicked.connect(self.export_active_playlist)
+        self.export_playlist_button.hide()
+        detail_row.addWidget(self.export_playlist_button)
+        self.delete_playlist_button = IconButton("trash", "Eliminar")
+        self.delete_playlist_button.setObjectName("dangerButton")
+        self.delete_playlist_button.clicked.connect(self.delete_active_playlist)
+        self.delete_playlist_button.hide()
+        detail_row.addWidget(self.delete_playlist_button)
         self.result_count = QLabel("0 pistas")
         self.result_count.setObjectName("muted")
         detail_row.addWidget(self.result_count)
@@ -859,25 +869,26 @@ class MusicFyWindow(QMainWindow):
     def show_page(self, mode: str) -> None:
         self.page_mode = mode
         self.active_collection = None
+        self.active_playlist_id = None
         self.back_button.hide()
+        self.export_playlist_button.hide()
+        self.delete_playlist_button.hide()
 
         for key, button in self.nav_buttons.items():
             selected = key == mode
             button.setChecked(selected)
             button.set_icon_color("#101820" if selected else "#aab6c4")
-            button.label_widget.setStyleSheet(
-                "color: #101820; font-weight: 750;" if selected
-                else "color: #aab6c4; font-weight: 650;"
-            )
+            button.set_label_color("#101820" if selected else "#aab6c4")
 
         page_details = {
-            "home": ("Tu espacio musical", "Toda tu colección, con un lugar para cada canción.", 0),
-            "tracks": ("Todas las canciones", "Tu biblioteca completa, lista para reproducir.", 1),
-            "albums": ("Tus álbumes", "Colecciones completas, con sus portadas originales.", 2),
-            "artists": ("Artistas", "Explora tu música por intérprete.", 2),
-            "genres": ("Géneros", "Encuentra el sonido que te apetece escuchar.", 2),
-            "favorites": ("Tus favoritos", "Las canciones que quieres tener siempre a mano.", 1),
-            "history": ("Escuchado recientemente", "Vuelve a lo que estabas disfrutando.", 1),
+            "home": ("Inicio", "Tu colección musical, de un vistazo.", 0),
+            "tracks": ("Canciones", "Toda tu música local, lista para reproducir.", 1),
+            "albums": ("Álbumes", "Explora tu colección por álbum.", 2),
+            "artists": ("Artistas", "Toda tu música organizada por artista.", 2),
+            "genres": ("Géneros", "Encuentra el sonido que te apetece.", 2),
+            "favorites": ("Favoritos", "Las canciones que has guardado.", 1),
+            "history": ("Escuchado recientemente", "Vuelve a tus últimas reproducciones.", 1),
+            "playlists": ("Mis playlists", "Crea, importa y organiza tus listas M3U.", 2),
         }
         title, subtitle, stack_index = page_details.get(mode, page_details["home"])
         self.page_title.setText(title)
@@ -921,7 +932,7 @@ class MusicFyWindow(QMainWindow):
 
         if self.page_mode == "home":
             self._render_home(albums)
-        elif self.page_mode in ("albums", "artists", "genres"):
+        elif self.page_mode in ("albums", "artists", "genres", "playlists"):
             self._render_collections()
         elif self.page_mode == "detail":
             collection = self.active_collection or {}
@@ -931,6 +942,8 @@ class MusicFyWindow(QMainWindow):
                 str(collection.get("artist")) if collection.get("kind") == "album" else None,
             )
             self._render_tracks(tracks)
+        elif self.page_mode == "playlist_detail" and self.active_playlist_id is not None:
+            self._render_tracks(self.database.get_playlist_tracks(self.active_playlist_id))
         elif self.page_mode == "favorites":
             self._render_tracks(favorites)
         elif self.page_mode == "history":
@@ -1002,24 +1015,40 @@ class MusicFyWindow(QMainWindow):
                 item for item in records
                 if not query or query in str(item["artist"]).casefold()
             ]
-        else:
+        elif self.page_mode == "genres":
             kind = "genre"
             records = self.database.list_genres()
             records = [
                 item for item in records
                 if not query or query in str(item["genre"]).casefold()
             ]
+        else:
+            kind = "playlist"
+            records = self.database.list_playlists()
+            records = [
+                item for item in records
+                if not query or query in str(item["name"]).casefold()
+            ]
 
         for index, record in enumerate(records):
             card = self._make_collection_card(kind, record)
-            card.clicked.connect(partial(self.show_collection_detail, kind, record))
+            if kind == "playlist":
+                card.clicked.connect(partial(self.show_playlist_detail, record))
+            else:
+                card.clicked.connect(partial(self.show_collection_detail, kind, record))
             self.collection_grid.addWidget(card, index // 4, index % 4)
 
         if not records:
-            empty = QLabel(
-                "No hay resultados para esta búsqueda."
-                if query else "Todavía no hay contenido. Añade música para llenar tu biblioteca."
+            message = (
+                "No hay playlists que coincidan con la búsqueda."
+                if query and kind == "playlist"
+                else "Todavía no tienes playlists. Crea una o importa un archivo M3U."
+                if kind == "playlist"
+                else "No hay resultados para esta búsqueda."
+                if query
+                else "Todavía no hay contenido. Añade música para llenar tu biblioteca."
             )
+            empty = QLabel(message)
             empty.setObjectName("emptyState")
             empty.setAlignment(Qt.AlignmentFlag.AlignCenter)
             empty.setMinimumHeight(180)
@@ -1036,6 +1065,9 @@ class MusicFyWindow(QMainWindow):
         elif kind == "artist":
             title = str(record.get("artist") or "Artista desconocido")
             subtitle = f'{record.get("album_count", 0)} álbumes  ·  {record.get("track_count", 0)} canciones'
+        elif kind == "playlist":
+            title = str(record.get("name") or "Playlist")
+            subtitle = f'{record.get("track_count", 0)} canciones  ·  M3U compatible'
         else:
             title = str(record.get("genre") or "Sin género")
             subtitle = f'{record.get("track_count", 0)} canciones'
