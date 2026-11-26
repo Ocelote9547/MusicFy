@@ -899,6 +899,9 @@ class MusicFyWindow(QMainWindow):
     def show_collection_detail(self, kind: str, record: dict[str, Any]) -> None:
         self.last_collection_mode = self.page_mode
         self.active_collection = {"kind": kind, **record}
+        self.active_playlist_id = None
+        self.export_playlist_button.hide()
+        self.delete_playlist_button.hide()
         self.page_mode = "detail"
         self.content_stack.setCurrentIndex(1)
         self.back_button.show()
@@ -914,6 +917,21 @@ class MusicFyWindow(QMainWindow):
             subtitle = f'{record.get("track_count", 0)} canciones'
         self.page_title.setText(title)
         self.page_subtitle.setText(subtitle)
+        self.refresh_content()
+
+    def show_playlist_detail(self, record: dict[str, Any]) -> None:
+        self.last_collection_mode = "playlists"
+        self.active_collection = None
+        self.active_playlist_id = int(record["id"])
+        self.page_mode = "playlist_detail"
+        self.content_stack.setCurrentIndex(1)
+        self.back_button.show()
+        self.export_playlist_button.show()
+        self.delete_playlist_button.show()
+        self.page_title.setText(str(record.get("name") or "Playlist"))
+        self.page_subtitle.setText(
+            f'{int(record.get("track_count") or 0)} canciones  ·  Playlist local'
+        )
         self.refresh_content()
 
     def return_from_detail(self) -> None:
@@ -1193,28 +1211,157 @@ class MusicFyWindow(QMainWindow):
         folder = QFileDialog.getExistingDirectory(
             self, "Seleccionar carpeta musical", str(Path.home())
         )
-        if not folder:
-            return
-        self.statusBar().showMessage("Analizando archivos y carátulas…")
-        tracks = scan_folder(folder)
-        for track in tracks:
-            self.database.save_track(track)
-        self.refresh_content()
-        self.statusBar().showMessage(
-            f"Se han añadido o actualizado {len(tracks)} canciones.", 6000
-        )
+        if folder:
+            self._start_library_import(folder=folder)
 
     def _import_paths(self, paths: list[str]) -> None:
-        imported = 0
-        for path in paths:
-            track = read_audio_file(path)
-            if track is not None:
-                self.database.save_track(track)
-                imported += 1
+        if paths:
+            self._start_library_import(paths=paths)
+
+    def _start_library_import(
+        self,
+        folder: str | None = None,
+        paths: list[str] | None = None,
+    ) -> None:
+        if self.import_worker is not None and self.import_worker.isRunning():
+            QMessageBox.information(
+                self, "Importación en curso",
+                "Espera a que termine la importación actual antes de iniciar otra."
+            )
+            return
+
+        self.imported_count = 0
+        self._set_import_busy(True)
+        self.import_worker = LibraryImportWorker(folder=folder, paths=paths)
+        self.import_worker.batch_ready.connect(self._save_import_batch)
+        self.import_worker.progress.connect(self._show_import_progress)
+        self.import_worker.completed.connect(self._finish_library_import)
+        self.import_worker.failed.connect(self._fail_library_import)
+        self.import_worker.start()
+        self.statusBar().showMessage("Preparando biblioteca en segundo plano…")
+
+    def _set_import_busy(self, busy: bool) -> None:
+        self.add_files_button.setEnabled(not busy)
+        self.add_folder_button.setEnabled(not busy)
+        self.import_playlist_button.setEnabled(not busy)
+
+    def _save_import_batch(self, tracks: list[dict[str, Any]]) -> None:
+        self.database.save_tracks(tracks)
+        self.imported_count += len(tracks)
+
+    def _show_import_progress(self, filename: str, count: int) -> None:
+        self.statusBar().showMessage(
+            f"Analizando música… {count} archivos · {filename}"
+        )
+
+    def _finish_library_import(self, count: int) -> None:
+        self._set_import_busy(False)
         self.refresh_content()
         self.statusBar().showMessage(
-            f"Se han añadido o actualizado {imported} canciones.", 6000
+            f"Biblioteca actualizada: {count} archivos analizados.", 7000
         )
+        self.import_worker = None
+
+    def _fail_library_import(self, message: str) -> None:
+        self._set_import_busy(False)
+        self.statusBar().showMessage("La importación terminó con algunos errores.", 7000)
+        QMessageBox.warning(
+            self, "Error al importar música",
+            "No se pudo completar el análisis de la biblioteca.\n\n" + message[:1000]
+        )
+        self.import_worker = None
+
+    # ------------------------------------------------------------------
+    # M3U playlists
+    # ------------------------------------------------------------------
+    def create_playlist(self) -> None:
+        name, accepted = QInputDialog.getText(
+            self, "Nueva playlist", "Nombre de la playlist:"
+        )
+        if not accepted or not name.strip():
+            return
+        playlist_id = self.database.create_playlist(name)
+        self.show_page("playlists")
+        record = self.database.get_playlist(playlist_id)
+        if record:
+            self.show_playlist_detail(record)
+
+    def import_m3u_playlist(self) -> None:
+        filename, _ = QFileDialog.getOpenFileName(
+            self, "Importar playlist", str(Path.home()),
+            "Playlists M3U (*.m3u *.m3u8)"
+        )
+        if not filename:
+            return
+        try:
+            parsed = parse_m3u(filename)
+            tracks = parsed["tracks"]
+            if not tracks:
+                QMessageBox.information(
+                    self, "Playlist vacía",
+                    "El archivo no contiene entradas locales compatibles."
+                )
+                return
+            playlist_id = self.database.create_playlist(parsed["name"])
+            self.database.save_playlist_tracks(playlist_id, tracks)
+            self.refresh_content()
+            existing = [item["path"] for item in tracks if Path(item["path"]).is_file()]
+            if existing:
+                self._start_library_import(paths=existing)
+            else:
+                self.statusBar().showMessage(
+                    f'Playlist "{parsed["name"]}" importada con {len(tracks)} entradas.', 7000
+                )
+            if parsed.get("skipped_remote"):
+                self.statusBar().showMessage(
+                    f'Playlist importada; se omitieron {parsed["skipped_remote"]} URLs remotas.', 8000
+                )
+            record = self.database.get_playlist(playlist_id)
+            if record:
+                self.show_playlist_detail(record)
+        except (OSError, UnicodeError, ValueError) as exc:
+            QMessageBox.warning(
+                self, "No se pudo importar la playlist", str(exc)
+            )
+
+    def export_active_playlist(self) -> None:
+        if self.active_playlist_id is None:
+            return
+        playlist = self.database.get_playlist(self.active_playlist_id)
+        if not playlist:
+            return
+        suggested = Path.home() / f'{playlist["name"]}.m3u8'
+        filename, _ = QFileDialog.getSaveFileName(
+            self, "Exportar playlist M3U", str(suggested),
+            "Playlist M3U8 (*.m3u8);;Playlist M3U (*.m3u)"
+        )
+        if not filename:
+            return
+        try:
+            tracks = self.database.get_playlist_tracks(self.active_playlist_id)
+            target = write_m3u(filename, playlist["name"], tracks)
+            self.statusBar().showMessage(
+                f"Playlist exportada: {target.name}", 6000
+            )
+        except OSError as exc:
+            QMessageBox.warning(self, "No se pudo exportar", str(exc))
+
+    def delete_active_playlist(self) -> None:
+        if self.active_playlist_id is None:
+            return
+        playlist = self.database.get_playlist(self.active_playlist_id)
+        if not playlist:
+            return
+        answer = QMessageBox.question(
+            self, "Eliminar playlist",
+            f'¿Quieres eliminar "{playlist["name"]}"? Los archivos de audio no se borrarán.',
+            QMessageBox.StandardButton.Yes | QMessageBox.StandardButton.No,
+            QMessageBox.StandardButton.No,
+        )
+        if answer == QMessageBox.StandardButton.Yes:
+            self.database.delete_playlist(self.active_playlist_id)
+            self.show_page("playlists")
+
 
     def _render_tracks(self, tracks: list[dict[str, Any]]) -> None:
         query = self.search_box.text().strip().casefold()
