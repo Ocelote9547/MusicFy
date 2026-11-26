@@ -88,20 +88,21 @@ class MusicDatabaseTests(unittest.TestCase):
         db_path = self.home / ".musicfy" / "library.sqlite3"
         connection = sqlite3.connect(db_path)
         try:
+            # Build an actual legacy schema on the same temporary database file.
             connection.execute("DROP TABLE IF EXISTS tracks")
             connection.execute(
-            """
-            CREATE TABLE tracks (
-                path TEXT PRIMARY KEY,
-                title TEXT NOT NULL,
-                artist TEXT NOT NULL DEFAULT 'Artista desconocido',
-                album TEXT NOT NULL DEFAULT 'Álbum desconocido',
-                duration REAL NOT NULL DEFAULT 0,
-                is_favorite INTEGER NOT NULL DEFAULT 0,
-                last_played TEXT
+                """
+                CREATE TABLE tracks (
+                    path TEXT PRIMARY KEY,
+                    title TEXT NOT NULL,
+                    artist TEXT NOT NULL DEFAULT 'Artista desconocido',
+                    album TEXT NOT NULL DEFAULT 'Álbum desconocido',
+                    duration REAL NOT NULL DEFAULT 0,
+                    is_favorite INTEGER NOT NULL DEFAULT 0,
+                    last_played TEXT
+                )
+                """
             )
-            """
-        )
             connection.execute(
                 "INSERT INTO tracks(path,title,artist,album,duration) VALUES(?,?,?,?,?)",
                 ("/music/legacy.mp3", "Legacy track", "Legacy artist", "Legacy album", 90),
@@ -116,7 +117,6 @@ class MusicDatabaseTests(unittest.TestCase):
         self.assertEqual(tracks[0]["title"], "Legacy track")
         self.assertEqual(tracks[0]["genre"], "Sin género")
         self.assertIsNone(tracks[0]["cover_path"])
-
 
     def test_playlist_storage_order_and_library_metadata(self) -> None:
         self.database.save_track({
