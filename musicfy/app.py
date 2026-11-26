@@ -407,7 +407,7 @@ class MusicFyWindow(QMainWindow):
         local_note.setObjectName("sidebar_note")
         side_layout.addWidget(local_note)
 
-        version = QLabel("MUSICFY  ·  0.3.0")
+        version = QLabel("MUSICFY  ·  0.3.1")
         version.setObjectName("version")
         side_layout.addWidget(version)
         return sidebar
@@ -425,6 +425,12 @@ class MusicFyWindow(QMainWindow):
             button = IconButton(icon_name, title)
             button.setObjectName("navButton")
             button.setCheckable(True)
+            button.setChecked(mode == "home")
+            button.set_icon_color("#111820" if mode == "home" else "#aebac8")
+            button.label_widget.setStyleSheet(
+                "color: #111820; font-weight: 750;" if mode == "home"
+                else "color: #aebac8; font-weight: 650;"
+            )
             button.setCursor(Qt.CursorShape.PointingHandCursor)
             button.clicked.connect(lambda _checked=False, selected=mode: self.show_page(selected))
             parent_layout.addWidget(button)
@@ -682,17 +688,20 @@ class MusicFyWindow(QMainWindow):
 
         self.previous_button = IconButton("previous")
         self.previous_button.setObjectName("controlButton")
+        self.previous_button.setFixedSize(38, 38)
         self.previous_button.clicked.connect(lambda: self.skip_track(-1))
         controls.addWidget(self.previous_button)
 
         self.play_button = IconButton("play")
         self.play_button.setObjectName("playButton")
-        self.play_button.setFixedSize(42, 42)
+        self.play_button.set_icon_color("#07131b")
+        self.play_button.setFixedSize(44, 44)
         self.play_button.clicked.connect(self.toggle_playback)
         controls.addWidget(self.play_button)
 
         self.next_button = IconButton("next")
         self.next_button.setObjectName("controlButton")
+        self.next_button.setFixedSize(38, 38)
         self.next_button.clicked.connect(lambda: self.skip_track(1))
         controls.addWidget(self.next_button)
         controls.addStretch(1)
@@ -750,7 +759,13 @@ class MusicFyWindow(QMainWindow):
         self.back_button.hide()
 
         for key, button in self.nav_buttons.items():
-            button.setChecked(key == mode)
+            selected = key == mode
+            button.setChecked(selected)
+            button.set_icon_color("#101820" if selected else "#aab6c4")
+            button.label_widget.setStyleSheet(
+                "color: #101820; font-weight: 750;" if selected
+                else "color: #aab6c4; font-weight: 650;"
+            )
 
         page_details = {
             "home": ("Tu espacio musical", "Toda tu colección, con un lugar para cada canción.", 0),
