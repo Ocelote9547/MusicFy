@@ -249,6 +249,17 @@ class IconButton(QPushButton):
 
 
 
+class ArtworkFrame(QFrame):
+    """Artwork surface that forwards normal clicks while leaving child buttons interactive."""
+
+    clicked = pyqtSignal()
+
+    def mousePressEvent(self, event: Any) -> None:
+        if event.button() == Qt.MouseButton.LeftButton:
+            self.clicked.emit()
+        super().mousePressEvent(event)
+
+
 class CollectionCard(QFrame):
     """Clickable media tile with a hover-to-play action."""
 
@@ -273,9 +284,10 @@ class CollectionCard(QFrame):
         layout.setContentsMargins(9, 9, 9, 12)
         layout.setSpacing(7)
 
-        artwork = QFrame()
+        artwork = ArtworkFrame()
         artwork.setObjectName("collectionArtwork")
         artwork.setFixedSize(160, 160)
+        artwork.clicked.connect(self.clicked.emit)
         artwork_layout = QGridLayout(artwork)
         artwork_layout.setContentsMargins(0, 0, 0, 0)
         artwork_layout.setSpacing(0)
