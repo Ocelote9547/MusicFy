@@ -628,6 +628,38 @@ class MusicFyWindow(QMainWindow):
         self.home_album_scroll.setWidget(self.home_album_area)
         layout.addWidget(self.home_album_scroll, 1)
 
+        self.home_playlist_section = QWidget()
+        playlist_header = QHBoxLayout(self.home_playlist_section)
+        playlist_header.setContentsMargins(0, 0, 0, 0)
+        playlist_title = QLabel("Tus playlists")
+        playlist_title.setObjectName("sectionTitle")
+        playlist_header.addWidget(playlist_title)
+        playlist_header.addStretch(1)
+        all_playlists = IconButton("arrow-right", "Ver todas")
+        all_playlists.setObjectName("textButton")
+        all_playlists.clicked.connect(lambda: self.show_page("playlists"))
+        playlist_header.addWidget(all_playlists)
+        layout.addWidget(self.home_playlist_section)
+
+        self.home_playlist_scroll = QScrollArea()
+        self.home_playlist_scroll.setObjectName("homeAlbumScroll")
+        self.home_playlist_scroll.setWidgetResizable(True)
+        self.home_playlist_scroll.setFrameShape(QFrame.Shape.NoFrame)
+        self.home_playlist_scroll.setMinimumHeight(270)
+        self.home_playlist_scroll.setHorizontalScrollBarPolicy(
+            Qt.ScrollBarPolicy.ScrollBarAsNeeded
+        )
+        self.home_playlist_scroll.setVerticalScrollBarPolicy(
+            Qt.ScrollBarPolicy.ScrollBarAlwaysOff
+        )
+        self.home_playlist_area = QWidget()
+        self.home_playlist_row = QHBoxLayout(self.home_playlist_area)
+        self.home_playlist_row.setContentsMargins(2, 2, 10, 10)
+        self.home_playlist_row.setSpacing(14)
+        self.home_playlist_row.setAlignment(Qt.AlignmentFlag.AlignLeft)
+        self.home_playlist_scroll.setWidget(self.home_playlist_area)
+        layout.addWidget(self.home_playlist_scroll, 1)
+
         # Proper empty state, with real next actions.
         self.home_empty_card = QFrame()
         self.home_empty_card.setObjectName("emptyStateCard")
@@ -1008,6 +1040,14 @@ class MusicFyWindow(QMainWindow):
             self.home_album_row.addWidget(card)
         self.home_album_row.addStretch(1)
 
+        playlists = self.database.list_playlists()
+        self._clear_layout(self.home_playlist_row)
+        for record in playlists[:12]:
+            card = self._make_collection_card("playlist", record)
+            card.clicked.connect(partial(self.show_playlist_detail, record))
+            self.home_playlist_row.addWidget(card)
+        self.home_playlist_row.addStretch(1)
+
         has_music = bool(self.database.list_tracks("all"))
         has_albums = bool(records)
         show_empty = not has_albums
@@ -1046,6 +1086,8 @@ class MusicFyWindow(QMainWindow):
 
         self.home_section_header.setVisible(has_albums)
         self.home_album_scroll.setVisible(has_albums)
+        self.home_playlist_section.setVisible(bool(playlists))
+        self.home_playlist_scroll.setVisible(bool(playlists))
         self.home_empty_card.setVisible(show_empty)
 
         if not has_music:
